@@ -248,62 +248,37 @@
         </div>
     </div>
 
-    <!-- MODAL ASISTENCIA (ADMIN): CHECKLIST + FIRMA + FOTO ENTRADA/SALIDA -->
+    <!-- MODAL ASISTENCIA (ADMIN): CANTIDAD DE PERSONAS + 1 FOTO + 1 FIRMA -->
     <div id="modalAsistencia" class="fixed inset-0 bg-slate-900/95 hidden z-[250] flex items-center justify-center p-4">
-        <div class="bg-white rounded-[3rem] max-w-2xl w-full p-8 md:p-10 shadow-2xl max-h-[95vh] overflow-y-auto chat-scroll relative">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-8 md:p-10 shadow-2xl max-h-[95vh] overflow-y-auto chat-scroll relative">
             <button onclick="closeAsistencia()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
-            <h3 class="text-2xl font-black mb-2 uppercase italic text-amber-600"><i class="fas fa-clipboard-check"></i> Control de Asistencia</h3>
+            <h3 class="text-2xl font-black mb-2 uppercase italic text-amber-600"><i class="fas fa-clipboard-check"></i> Confirmar Asistencia</h3>
             <p id="asis_reserva_info" class="text-xs font-bold text-slate-500 mb-6"></p>
 
-            <div class="bg-slate-50 border rounded-[2rem] p-6 mb-6 space-y-3">
-                <p class="text-[10px] font-black uppercase text-slate-400">Verificación de Cantidad de Personas</p>
-                <div>
-                    <label class="text-[9px] font-black uppercase text-slate-400">Cantidad Real de Personas Presentes</label>
-                    <input type="number" id="asis_personas_reales" min="0" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-amber-500 font-bold text-sm">
+            <div class="space-y-5">
+                <div class="bg-slate-50 border rounded-[2rem] p-5 space-y-2">
+                    <label class="text-[9px] font-black uppercase text-slate-400">Cantidad de Personas que Asisten</label>
+                    <input type="number" id="asis_personas_reales" min="0" class="w-full p-3 border rounded-xl bg-white outline-none focus:border-amber-500 font-bold text-sm">
                 </div>
-                <label class="flex items-center gap-2 pt-1 cursor-pointer">
-                    <input type="checkbox" id="asis_personas_ok" class="w-4 h-4 accent-amber-600">
-                    <span class="text-[10px] font-black uppercase text-slate-600">Confirmo que la cantidad presente es igual o menor a la declarada</span>
-                </label>
-                <button onclick="saveAsistenciaChecklist()" class="w-full mt-2 bg-amber-500 text-slate-900 py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-amber-400 transition">Guardar Verificación</button>
-            </div>
 
-            <div class="grid md:grid-cols-2 gap-6">
-                <!-- ENTRADA -->
                 <div class="border rounded-[2rem] p-5 space-y-3">
-                    <p class="text-[10px] font-black uppercase text-emerald-700 text-center border-b pb-2"><i class="fas fa-sign-in-alt"></i> Registro de Entrada</p>
-                    <p class="text-[9px] font-black uppercase text-slate-400">Firma del Solicitante</p>
-                    <canvas id="asis_sign_entrada" class="w-full h-32 bg-slate-50 border rounded-xl touch-none"></canvas>
-                    <button onclick="clearSignaturePad('entrada')" class="w-full text-[9px] font-black uppercase text-slate-400 hover:text-red-500">Limpiar Firma</button>
-
-                    <p class="text-[9px] font-black uppercase text-slate-400 pt-2">Foto al Momento de Firmar</p>
-                    <video id="asis_video_entrada" class="w-full h-32 bg-slate-900 rounded-xl object-cover hidden" autoplay playsinline muted></video>
-                    <img id="asis_photo_entrada_preview" class="w-full h-32 bg-slate-100 rounded-xl object-cover hidden">
+                    <p class="text-[9px] font-black uppercase text-slate-400">Foto</p>
+                    <video id="asis_video" class="w-full h-40 bg-slate-900 rounded-xl object-cover hidden" autoplay playsinline muted></video>
+                    <img id="asis_photo_preview" class="w-full h-40 bg-slate-100 rounded-xl object-cover hidden">
                     <div class="flex gap-2">
-                        <button onclick="startCamera('entrada')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-200"><i class="fas fa-camera"></i> Iniciar Cámara</button>
-                        <button onclick="capturePhoto('entrada')" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-700"><i class="fas fa-camera-retro"></i> Tomar Foto</button>
+                        <button onclick="startCamera()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-200"><i class="fas fa-camera"></i> Iniciar Cámara</button>
+                        <button onclick="capturePhoto()" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-700"><i class="fas fa-camera-retro"></i> Tomar Foto</button>
                     </div>
-                    <button onclick="saveAsistencia('entrada')" id="asis_btn_save_entrada" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-emerald-500 transition">Confirmar Entrada</button>
-                    <p id="asis_status_entrada" class="text-[9px] font-black uppercase text-center hidden text-emerald-600"></p>
                 </div>
 
-                <!-- SALIDA -->
                 <div class="border rounded-[2rem] p-5 space-y-3">
-                    <p class="text-[10px] font-black uppercase text-red-700 text-center border-b pb-2"><i class="fas fa-sign-out-alt"></i> Registro de Salida</p>
                     <p class="text-[9px] font-black uppercase text-slate-400">Firma del Solicitante</p>
-                    <canvas id="asis_sign_salida" class="w-full h-32 bg-slate-50 border rounded-xl touch-none"></canvas>
-                    <button onclick="clearSignaturePad('salida')" class="w-full text-[9px] font-black uppercase text-slate-400 hover:text-red-500">Limpiar Firma</button>
-
-                    <p class="text-[9px] font-black uppercase text-slate-400 pt-2">Foto al Momento de Firmar</p>
-                    <video id="asis_video_salida" class="w-full h-32 bg-slate-900 rounded-xl object-cover hidden" autoplay playsinline muted></video>
-                    <img id="asis_photo_salida_preview" class="w-full h-32 bg-slate-100 rounded-xl object-cover hidden">
-                    <div class="flex gap-2">
-                        <button onclick="startCamera('salida')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-200"><i class="fas fa-camera"></i> Iniciar Cámara</button>
-                        <button onclick="capturePhoto('salida')" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-700"><i class="fas fa-camera-retro"></i> Tomar Foto</button>
-                    </div>
-                    <button onclick="saveAsistencia('salida')" id="asis_btn_save_salida" class="w-full bg-red-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-red-500 transition">Confirmar Salida</button>
-                    <p id="asis_status_salida" class="text-[9px] font-black uppercase text-center hidden text-red-600"></p>
+                    <canvas id="asis_sign" class="w-full h-32 bg-slate-50 border rounded-xl touch-none"></canvas>
+                    <button onclick="clearSignaturePad()" class="w-full text-[9px] font-black uppercase text-slate-400 hover:text-red-500">Limpiar Firma</button>
                 </div>
+
+                <button onclick="saveAsistencia()" id="asis_btn_save" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg hover:bg-emerald-500 transition">Confirmar Asistencia</button>
+                <p id="asis_status" class="text-[9px] font-black uppercase text-center hidden text-emerald-600"></p>
             </div>
         </div>
     </div>
@@ -839,8 +814,8 @@
         };
 
         // ===================== CONTROL DE ASISTENCIA (ADMIN) =====================
-        // Checklist de cantidad de personas + firma digital + foto al firmar, para
-        // entrada y salida del día de la reserva.
+        // Registro único: cantidad de personas presentes + una foto + una firma
+        // del solicitante que confirma la asistencia a la reserva.
 
         function setupSignaturePad(canvas) {
             const ctx = canvas.getContext('2d');
@@ -875,50 +850,50 @@
             return state;
         }
 
-        window.clearSignaturePad = (tipo) => {
-            const pad = asisSignPads[tipo];
+        window.clearSignaturePad = () => {
+            const pad = asisSignPads.main;
             if(!pad) return;
             pad.ctx.clearRect(0, 0, pad.canvas.width, pad.canvas.height);
         };
 
-        window.startCamera = async (tipo) => {
+        window.startCamera = async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-                asisCameraStreams[tipo] = stream;
-                const video = document.getElementById(`asis_video_${tipo}`);
+                asisCameraStreams.main = stream;
+                const video = document.getElementById('asis_video');
                 video.srcObject = stream;
                 video.classList.remove('hidden');
-                document.getElementById(`asis_photo_${tipo}_preview`).classList.add('hidden');
+                document.getElementById('asis_photo_preview').classList.add('hidden');
             } catch(e) {
                 alert("No se pudo acceder a la cámara: " + e.message);
             }
         };
 
-        window.capturePhoto = (tipo) => {
-            const video = document.getElementById(`asis_video_${tipo}`);
-            const stream = asisCameraStreams[tipo];
+        window.capturePhoto = () => {
+            const video = document.getElementById('asis_video');
+            const stream = asisCameraStreams.main;
             if(!stream || !video.videoWidth) return alert("Primero inicia la cámara.");
 
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             const base64 = canvas.toDataURL('image/jpeg', 0.85);
-            asisCapturedPhotos[tipo] = base64;
+            asisCapturedPhotos.main = base64;
 
-            const preview = document.getElementById(`asis_photo_${tipo}_preview`);
+            const preview = document.getElementById('asis_photo_preview');
             preview.src = base64;
             preview.classList.remove('hidden');
             video.classList.add('hidden');
 
             stream.getTracks().forEach(t => t.stop());
-            asisCameraStreams[tipo] = null;
+            asisCameraStreams.main = null;
         };
 
         function stopAllAsisCameras() {
-            Object.keys(asisCameraStreams).forEach(tipo => {
-                const s = asisCameraStreams[tipo];
+            Object.keys(asisCameraStreams).forEach(k => {
+                const s = asisCameraStreams[k];
                 if(s) s.getTracks().forEach(t => t.stop());
-                asisCameraStreams[tipo] = null;
+                asisCameraStreams[k] = null;
             });
         }
 
@@ -932,33 +907,34 @@
 
             const asistencia = r.asistencia || {};
             document.getElementById('asis_personas_reales').value = asistencia.personasReales ?? '';
-            document.getElementById('asis_personas_ok').checked = !!asistencia.personasOk;
 
-            ['entrada', 'salida'].forEach(tipo => {
-                const statusEl = document.getElementById(`asis_status_${tipo}`);
-                const saveBtn = document.getElementById(`asis_btn_save_${tipo}`);
-                const preview = document.getElementById(`asis_photo_${tipo}_preview`);
-                preview.classList.add('hidden');
-                document.getElementById(`asis_video_${tipo}`).classList.add('hidden');
-                if(asistencia[tipo] && asistencia[tipo].hora) {
-                    statusEl.classList.remove('hidden');
-                    statusEl.innerText = `✓ Registrada a las ${new Date(asistencia[tipo].hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
-                    saveBtn.innerText = `Actualizar ${tipo === 'entrada' ? 'Entrada' : 'Salida'}`;
-                    if(asistencia[tipo].foto) { preview.src = asistencia[tipo].foto; preview.classList.remove('hidden'); }
-                } else {
-                    statusEl.classList.add('hidden');
-                    saveBtn.innerText = `Confirmar ${tipo === 'entrada' ? 'Entrada' : 'Salida'}`;
-                }
-            });
+            const statusEl = document.getElementById('asis_status');
+            const saveBtn = document.getElementById('asis_btn_save');
+            const preview = document.getElementById('asis_photo_preview');
+            preview.classList.add('hidden');
+            document.getElementById('asis_video').classList.add('hidden');
+
+            if(asistencia.hora) {
+                statusEl.classList.remove('hidden');
+                statusEl.innerText = `✓ Confirmada a las ${new Date(asistencia.hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+                saveBtn.innerText = 'Actualizar Asistencia';
+                if(asistencia.foto) { preview.src = asistencia.foto; preview.classList.remove('hidden'); }
+            } else {
+                statusEl.classList.add('hidden');
+                saveBtn.innerText = 'Confirmar Asistencia';
+            }
 
             showModal('modalAsistencia');
 
-            // Inicializar los pads de firma después de que el modal sea visible (canvas necesita tamaño real)
+            // Inicializar el pad de firma después de que el modal sea visible (canvas necesita tamaño real)
             setTimeout(() => {
-                ['entrada', 'salida'].forEach(tipo => {
-                    const canvas = document.getElementById(`asis_sign_${tipo}`);
-                    asisSignPads[tipo] = setupSignaturePad(canvas);
-                });
+                const canvas = document.getElementById('asis_sign');
+                asisSignPads.main = setupSignaturePad(canvas);
+                if(asistencia.firma) {
+                    const img = new Image();
+                    img.onload = () => asisSignPads.main.ctx.drawImage(img, 0, 0, canvas.clientWidth, canvas.clientHeight);
+                    img.src = asistencia.firma;
+                }
             }, 50);
         };
 
@@ -967,40 +943,23 @@
             closeModal('modalAsistencia');
         };
 
-        window.saveAsistenciaChecklist = async () => {
+        window.saveAsistencia = async () => {
             if(!editingAsistenciaId) return;
-            const r = reserves.find(x => x.id === editingAsistenciaId);
-            const personasReales = parseInt(document.getElementById('asis_personas_reales').value || 0);
-            const personasOk = document.getElementById('asis_personas_ok').checked;
-
-            if(r && personasReales > (r.personas || 0) && personasOk) {
-                return alert("La cantidad real es mayor a la declarada; no puedes marcar la casilla de verificación.");
-            }
-
-            try {
-                await updateDoc(doc(db, "reservations", editingAsistenciaId), {
-                    'asistencia.personasReales': personasReales,
-                    'asistencia.personasOk': personasOk
-                });
-                alert("Verificación de asistencia guardada.");
-            } catch(e) { alert(e.message); }
-        };
-
-        window.saveAsistencia = async (tipo) => {
-            if(!editingAsistenciaId) return;
-            const pad = asisSignPads[tipo];
+            const pad = asisSignPads.main;
             if(!pad) return alert("La firma aún no está lista, intenta de nuevo.");
 
-            const firma = pad.canvas.toDataURL('image/png');
-            const foto = asisCapturedPhotos[tipo] || null;
+            const personasReales = parseInt(document.getElementById('asis_personas_reales').value || 0);
+            if(!personasReales) return alert("Ingresa la cantidad de personas que asisten.");
 
-            if(!foto) { if(!confirm("No se ha tomado una foto para este registro. ¿Deseas continuar sin foto?")) return; }
+            const firma = pad.canvas.toDataURL('image/png');
+            const foto = asisCapturedPhotos.main || null;
+            if(!foto) { if(!confirm("No se ha tomado una foto. ¿Deseas continuar sin foto?")) return; }
 
             try {
                 await updateDoc(doc(db, "reservations", editingAsistenciaId), {
-                    [`asistencia.${tipo}`]: { firma, foto, hora: new Date().toISOString() }
+                    asistencia: { personasReales, firma, foto, hora: new Date().toISOString() }
                 });
-                alert(`Registro de ${tipo === 'entrada' ? 'entrada' : 'salida'} guardado correctamente.`);
+                alert("Asistencia confirmada correctamente.");
                 closeAsistencia();
             } catch(e) { alert(e.message); }
         };
