@@ -1211,7 +1211,7 @@
                                 ${r.status === 'Pendiente' ? `<div class="flex gap-1"><button onclick="updateResStatus('${r.id}', 'Aprobada')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-emerald-200">Aprobar</button><button onclick="updateResStatus('${r.id}', 'Rechazada')" class="bg-red-100 text-red-700 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-red-200">Rechazar</button></div>` : `<span class="px-3 py-1 rounded text-[10px] font-black uppercase ${r.status==='Aprobada'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${r.status}</span>`}
                                 ${r.status === 'Aprobada' ? `<button onclick="openAsistencia('${r.id}')" class="bg-amber-100 text-amber-700 px-3 py-1 rounded text-[10px] font-black uppercase block hover:bg-amber-200 mt-1"><i class="fas fa-clipboard-check"></i> Asistencia</button>` : ''}
                                 <button onclick="openEditReservation('${r.id}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-black uppercase block hover:bg-blue-200 mt-1"><i class="fas fa-edit"></i> Editar</button>
-                                ${currentUser.role === 'superadmin' ? `<button onclick="deleteReserva('${r.id}')" class="bg-slate-200 text-slate-600 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-slate-300 mt-1"><i class="fas fa-trash"></i> Borrar</button>` : ''}
+                                ${currentUser.role === 'superadmin' || (currentUser.role === 'admin' && r.status === 'Rechazada') ? `<button onclick="deleteReserva('${r.id}')" class="bg-slate-200 text-slate-600 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-slate-300 mt-1"><i class="fas fa-trash"></i> Borrar</button>` : ''}
                             </div>
                         </td>
                     </tr>`
@@ -1305,6 +1305,11 @@
         };
 
         window.deleteReserva = async (id) => {
+            const r = reserves.find(x => x.id === id);
+            // El admin (no superadmin) solo puede borrar reservas ya Rechazadas
+            if(currentUser.role === 'admin' && (!r || r.status !== 'Rechazada')) {
+                return alert("Como Admin solo puedes borrar reservas Rechazadas.");
+            }
             if(!confirm("⚠️ ¿Borrar reserva permanentemente?")) return;
             try { await deleteDoc(doc(db, "reservations", id)); } catch(e) { alert(e.message); }
         };
