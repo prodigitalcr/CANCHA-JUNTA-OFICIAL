@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Reservas - Cancha Escolar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Librería para Exportar el listado de reservas a PDF (sin datos financieros) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .glass-dark { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .loader { border-top-color: #10b981; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay" class="fixed inset-0 bg-white z-[200] flex flex-col items-center justify-center">
+        <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+        <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Cargando sistema...</p>
+    </div>
+
+    <nav class="bg-white border-b p-4 flex justify-between items-center sticky top-0 z-40 glass shadow-sm">
+        <span class="font-black text-xl italic uppercase cursor-pointer" onclick="location.reload()">Cancha<span class="text-emerald-600">Reservas</span></span>
+        <div id="navActions" class="flex gap-2">
+            <button onclick="showModal('loginModal')" class="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase shadow-lg hover:bg-slate-700 transition"><i class="fas fa-sign-in-alt"></i> Ingresar / Reservar</button>
+        </div>
+        <div id="navUserZone" class="hidden flex items-center gap-4">
+            <button id="btnWaAdmin" onclick="openWaAdmin()" class="hidden bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-black uppercase hover:bg-emerald-500 transition shadow-md"><i class="fab fa-whatsapp"></i> WhatsApp Encargado</button>
+            <div class="flex flex-col text-right">
+                <span id="userNameDisplay" class="text-[11px] font-black uppercase text-slate-800"></span>
+                <span id="userRoleDisplay" class="text-[9px] font-bold uppercase text-emerald-500"></span>
+            </div>
+            <button onclick="openProfile()" class="bg-slate-100 text-slate-600 p-2.5 rounded-xl text-xs hover:bg-slate-200 transition" title="Mi Perfil / Configurar"><i class="fas fa-user-cog"></i></button>
+            <button onclick="handleLogout()" class="text-red-500 bg-red-50 p-2.5 rounded-xl font-black text-xs uppercase hover:bg-red-100 transition"><i class="fas fa-sign-out-alt"></i> Salir</button>
+        </div>
+    </nav>
+
+    <!-- LANDING Y PIZARRA PÚBLICA -->
+    <section id="landingPage" class="relative min-h-[90vh] flex flex-col items-center justify-center p-6 overflow-hidden">
+        <div class="absolute inset-0 bg-slate-900 -z-10">
+            <video autoplay loop muted playsinline class="w-full h-full object-cover opacity-20">
+                <source src="https://cdn.pixabay.com/video/2021/08/11/84687-586711867_large.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="text-center z-10 mb-8 mt-4">
+            <h1 class="text-5xl md:text-7xl font-black italic uppercase mb-4 text-white drop-shadow-2xl">RESERVAS <span class="text-emerald-400">CANCHA</span></h1>
+            <p class="text-emerald-300 font-bold mb-2 uppercase text-sm tracking-widest drop-shadow-md">Control de horarios y disponibilidad de la cancha</p>
+            <p id="publicInfoText" class="text-slate-300 font-bold mb-8 text-xs max-w-lg mx-auto"></p>
+            <button onclick="showModal('modalResType')" class="bg-emerald-600 text-white px-12 py-5 rounded-[2rem] font-black uppercase shadow-2xl hover:bg-emerald-500 hover:scale-105 transition-all">Reservar Ahora</button>
+        </div>
+
+        <!-- Pizarra de Ocupación con Días Ocupados en reservas activas -->
+        <div class="w-full max-w-5xl glass-dark rounded-[2.5rem] p-8 shadow-2xl z-10 mt-2 border-t border-slate-700/50">
+            <h3 class="text-white text-2xl font-black italic uppercase mb-2 text-center flex items-center justify-center gap-3">
+                <i class="far fa-calendar-check text-emerald-400"></i> Pizarra de Ocupación
+            </h3>
+            <p class="text-slate-400 text-xs text-center font-bold mb-8 uppercase tracking-wider">Fechas con bloques reservados / ocupados</p>
+            <div id="publicReservationsBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-h-[400px] overflow-y-auto chat-scroll pr-2"></div>
+        </div>
+    </section>
+
+    <main id="app" class="p-6 max-w-7xl mx-auto hidden min-h-[80vh]">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <h2 class="text-4xl font-black italic uppercase text-slate-800 tracking-tight">Panel de Control</h2>
+            <div class="flex gap-3">
+                <button id="btnChatAdmin" onclick="openUserChat()" class="hidden bg-blue-600 text-white px-6 py-3.5 rounded-2xl font-black shadow-lg uppercase text-xs hover:bg-blue-700 transition"><i class="fas fa-headset mr-1"></i> Soporte / Chat</button>
+                <button id="btnNewRes" onclick="showModal('modalResType')" class="hidden bg-emerald-600 text-white px-8 py-3.5 rounded-2xl font-black shadow-lg uppercase text-xs hover:bg-emerald-500 transition"><i class="fas fa-plus-circle mr-1"></i> Nueva Reserva</button>
+            </div>
+        </div>
+
+        <div id="adminTabs" class="hidden flex gap-2 border-b-2 border-slate-100 mb-8 overflow-x-auto whitespace-nowrap pb-2">
+            <button onclick="switchTab('adminPanel')" id="tab_adminPanel" class="hidden px-5 py-2.5 rounded-xl font-black text-xs uppercase bg-emerald-50 text-emerald-700 transition">Control de Reservas</button>
+            <button onclick="switchTab('userPanel')" id="tab_userPanel" class="hidden px-5 py-2.5 rounded-xl font-black text-xs uppercase bg-emerald-50 text-emerald-700 transition">Mis Reservas</button>
+            <button onclick="switchTab('equiposPanel')" id="tab_equiposPanel" class="hidden px-5 py-2.5 rounded-xl font-black text-xs uppercase text-slate-500 hover:bg-slate-50 transition">Directorio Usuarios</button>
+            <button onclick="switchTab('configPanel')" id="tab_configPanel" class="hidden px-5 py-2.5 rounded-xl font-black text-xs uppercase text-slate-500 hover:bg-slate-50 transition"><i class="fas fa-cogs mr-1"></i> Config</button>
+        </div>
+
+        <!-- PANEL ADMIN: CONTROL DE RESERVAS -->
+        <div id="adminPanel" class="hidden space-y-6 animate-fade-in">
+            <div class="flex justify-end">
+                <button onclick="exportReservasPDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-xl text-xs font-black uppercase transition flex items-center gap-2 shadow-lg"><i class="fas fa-file-pdf text-red-400"></i> Exportar Listado PDF</button>
+            </div>
+            <div class="bg-white rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <tr><th class="p-6">Reserva / Tipo</th><th class="p-6">Solicitante / Detalle</th><th class="p-6">Materiales</th><th class="p-6 text-center">Gestión / Acciones</th></tr>
+                    </thead>
+                    <tbody id="adminTableBody" class="text-xs font-bold divide-y text-slate-600"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL USUARIO: MIS RESERVAS -->
+        <div id="userPanel" class="hidden animate-fade-in space-y-8">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4 bg-emerald-600 rounded-[2.5rem] p-8 shadow-xl text-white">
+                <div>
+                    <h3 id="userWelcomeText" class="text-3xl font-black italic uppercase">Bienvenido</h3>
+                    <p class="text-xs font-bold text-emerald-100 uppercase mt-1">Gestiona tus reservas activas</p>
+                </div>
+                <div class="w-full md:w-auto">
+                    <button onclick="showModal('modalResType')" class="w-full md:w-auto bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-slate-800 hover:scale-105 transition-all flex items-center justify-center gap-2 border-2 border-slate-700">
+                        <i class="fas fa-plus-circle text-xl"></i> Nueva Reserva
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-xl font-black text-slate-800 uppercase italic mb-4">Mis Reservas Recientes</h4>
+                <div id="userResList" class="grid md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 chat-scroll"></div>
+            </div>
+        </div>
+
+        <!-- PANEL ADMIN: DIRECTORIO DE USUARIOS -->
+        <div id="equiposPanel" class="hidden space-y-6 animate-fade-in">
+            <div class="bg-white rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <tr><th class="p-6">Usuario / Rol</th><th class="p-6">Cédula / Documentos</th><th class="p-6">Contacto</th><th class="p-6 text-center">Acciones</th></tr>
+                    </thead>
+                    <tbody id="equiposTableBody" class="text-xs font-bold divide-y text-slate-600"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL CONFIGURACIÓN -->
+        <div id="configPanel" class="hidden space-y-6 animate-fade-in">
+            <div class="bg-white rounded-[2.5rem] border shadow-sm p-8 max-w-lg mx-auto">
+                <div class="bg-amber-100 text-amber-800 p-4 rounded-xl text-[10px] font-black uppercase mb-6 flex gap-3 items-center">
+                    <i class="fas fa-shield-alt text-2xl"></i> ZONA RESTRINGIDA PARA SUPERADMINISTRADOR
+                </div>
+                <h3 class="text-2xl font-black mb-6 uppercase italic">Configuración Base</h3>
+                <div class="space-y-6">
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase">WhatsApp del Encargado de la Cancha</label>
+                        <input type="text" id="config_whatsapp" placeholder="Ej: 8888-8888" class="w-full p-4 border-2 rounded-2xl font-black text-emerald-600 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition text-lg tracking-widest text-center">
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-slate-400 uppercase">Información Pública (Horario / Reglas de Uso)</label>
+                        <textarea id="config_info" placeholder="Ej: Horario disponible de 7am a 6pm. Uso prioritario para actividades del centro educativo." class="w-full p-4 border-2 rounded-2xl font-bold text-slate-700 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition h-28"></textarea>
+                    </div>
+                    <button onclick="saveConfig()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-slate-800 transition">Guardar Configuración</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Visor de Imagen -->
+    <div id="modalImageViewer" class="fixed inset-0 bg-slate-900/95 hidden z-[300] flex items-center justify-center p-4">
+        <div class="relative max-w-4xl w-full flex flex-col items-center">
+            <button onclick="closeModal('modalImageViewer')" class="absolute -top-12 right-0 text-white hover:text-red-400 text-4xl transition"><i class="fas fa-times"></i></button>
+            <img id="fullImageViewer" src="" class="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain border-4 border-slate-700">
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR MI PERFIL -->
+    <div id="modalProfile" class="fixed inset-0 bg-slate-900/95 hidden z-[150] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeModal('modalProfile')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-6 uppercase italic text-slate-800"><i class="fas fa-user-edit text-emerald-600"></i> Mi Información</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Nombre Completo</label>
+                    <input type="text" id="profile_name" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Número de Cédula</label>
+                    <input type="text" id="profile_cedula" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">WhatsApp / Teléfono</label>
+                    <input type="text" id="profile_phone" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Foto o Escaneo de Cédula (Opcional)</label>
+                    <div class="flex items-center gap-3 mt-1">
+                        <label class="flex-1 bg-slate-100 p-4 text-center rounded-2xl cursor-pointer text-xs font-bold text-slate-600 hover:bg-slate-200 transition border-2 border-dashed border-slate-300">
+                            <span id="lbl_profile_photo"><i class="fas fa-camera"></i> Adjuntar Foto</span>
+                            <input type="file" id="profile_photo_input" class="hidden" accept="image/*" onchange="handleProfilePhoto(this)">
+                        </label>
+                        <img id="profile_photo_preview" class="w-12 h-12 rounded-xl object-cover hidden border cursor-pointer hover:scale-105 transition" onclick="viewImage(this.src)">
+                    </div>
+                </div>
+                <button onclick="saveProfile()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 transition">Guardar Información</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR RESERVAS (ACCESIBLE POR ADMIN Y SUPERADMIN) -->
+    <div id="modalEditReservation" class="fixed inset-0 bg-slate-900/95 hidden z-[250] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeModal('modalEditReservation')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-6 uppercase italic text-emerald-600"><i class="fas fa-calendar-edit"></i> Editar Reserva</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Usuario / Equipo</label>
+                    <input type="text" id="edit_res_teamName" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Fecha</label>
+                    <input type="date" id="edit_res_date" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400">Hora Entrada</label>
+                        <input type="time" id="edit_res_hourIn" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black uppercase text-slate-400">Hora Salida</label>
+                        <input type="time" id="edit_res_hourOut" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+                <button onclick="saveEditReservation()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 transition">Confirmar y Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EDITAR USUARIO (SUPERADMIN) -->
+    <div id="modalEditClient" class="fixed inset-0 bg-slate-900/95 hidden z-[250] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeModal('modalEditClient')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-6 uppercase italic text-amber-600"><i class="fas fa-user-edit"></i> Editar Usuario</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Nombre</label>
+                    <input type="text" id="edit_client_name" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Cédula</label>
+                    <input type="text" id="edit_client_cedula" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Teléfono / WhatsApp</label>
+                    <input type="text" id="edit_client_phone" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-amber-500">
+                </div>
+                <label class="block bg-slate-100 p-4 text-center rounded-2xl cursor-pointer text-xs font-bold text-slate-600 hover:bg-slate-200 transition border-2 border-dashed border-slate-300">
+                    <i class="fas fa-camera"></i> Actualizar Foto de Cédula (Opcional)
+                    <input type="file" class="hidden" accept="image/*" onchange="handleEditFoto(this)">
+                </label>
+                <button onclick="saveEditClient()" class="w-full bg-amber-500 text-slate-900 py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-amber-400 transition">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL REGISTRO (MULTIPERFIL) -->
+    <div id="modalReg" class="fixed inset-0 bg-slate-900/95 hidden z-[110] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll relative">
+            <h3 class="text-3xl font-black mb-6 uppercase italic text-center">Nuevo <span class="text-emerald-600">Usuario</span></h3>
+
+            <div class="space-y-4">
+                <select id="reg_type" onchange="toggleRegType()" class="w-full p-4 border rounded-2xl font-black bg-emerald-50 text-emerald-800 outline-none focus:border-emerald-500 cursor-pointer shadow-sm">
+                    <option value="equipo">⚽ Inscripción como Equipo / Grupo</option>
+                    <option value="evento">🎉 Inscripción para Evento Especial</option>
+                </select>
+
+                <!-- DYNAMIC FIELDS -->
+                <div id="reg_fields_equipo" class="space-y-4">
+                    <input type="text" id="reg_team_name" placeholder="Nombre del Equipo / Grupo" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                    <input type="text" id="reg_team_ages" placeholder="Edades Promedio de Participantes (Ej: 12-15)" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                </div>
+
+                <div id="reg_fields_evento" class="space-y-4 hidden">
+                    <input type="text" id="reg_event_name" placeholder="Nombre Completo del Responsable" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-blue-500">
+                    <textarea id="reg_event_obj" placeholder="Objetivo de usar las instalaciones (Ej: Actividad, Encuentro)" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-blue-500 h-24"></textarea>
+                </div>
+
+                <!-- COMMON FIELDS -->
+                <div class="grid grid-cols-2 gap-4">
+                    <input type="text" id="reg_cedula" placeholder="Nº de Cédula" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                    <input type="text" id="reg_phone" placeholder="WhatsApp" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                </div>
+
+                <label class="block border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-center rounded-2xl cursor-pointer hover:bg-slate-100 transition">
+                    <span id="lbl_reg_foto" class="text-xs font-black uppercase text-slate-500"><i class="fas fa-id-card"></i> Subir Foto de Cédula (Opcional)</span>
+                    <input type="file" class="hidden" accept="image/*" onchange="handleRegFoto(this)">
+                </label>
+
+                <input type="email" id="reg_email" placeholder="Correo Electrónico (Para Acceso)" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                <input type="password" id="reg_pass" placeholder="Contraseña Segura (Mín 6 caracteres)" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+
+                <button id="btnDoRegister" onclick="handleRegister()" class="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 transition">Crear Cuenta</button>
+                <button onclick="closeModal('modalReg')" class="w-full text-slate-400 font-black text-[10px] uppercase mt-2 hover:text-slate-600">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGIN -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/95 hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-white p-10 rounded-[3rem] w-full max-w-md shadow-2xl">
+            <h2 class="text-4xl font-black mb-8 italic uppercase text-center text-slate-800">Acceso</h2>
+            <input type="email" id="loginEmail" placeholder="Correo Electrónico" class="w-full p-4 border rounded-2xl mb-4 font-bold bg-slate-50 outline-none focus:border-emerald-500 transition">
+            <input type="password" id="loginPass" placeholder="Contraseña" class="w-full p-4 border rounded-2xl mb-8 font-bold bg-slate-50 outline-none focus:border-emerald-500 transition">
+            <button id="btnDoLogin" onclick="handleLogin()" class="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 transition">Ingresar</button>
+            <button onclick="showRegister()" class="w-full mt-6 text-emerald-600 font-black text-[10px] uppercase tracking-widest text-center block hover:underline">Solicitar Afiliación (Registro)</button>
+            <button onclick="closeModal('loginModal')" class="w-full mt-4 text-slate-400 font-black text-[10px] uppercase text-center block hover:underline">Volver a Inicio</button>
+        </div>
+    </div>
+
+    <!-- MODAL RESERVA -->
+    <div id="modalRes" class="fixed inset-0 bg-slate-900/95 hidden z-[115] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-3xl w-full p-8 md:p-10 shadow-2xl max-h-[95vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeModal('modalRes')" class="absolute top-8 right-8 text-slate-400 hover:text-slate-800 text-2xl z-10"><i class="fas fa-times"></i></button>
+
+            <h3 class="text-2xl font-black uppercase italic mb-4">Reserva: <span id="resTitleType" class="text-emerald-600">...</span></h3>
+
+            <div class="space-y-6">
+                <h3 class="text-xl font-black uppercase italic text-slate-700 border-b pb-2">Detalles de Agenda</h3>
+                <div class="grid md:grid-cols-3 gap-4 font-bold text-xs">
+                    <div>
+                        <label class="text-slate-400 text-[9px] uppercase">Selecciona Fecha</label>
+                        <input type="date" id="res_fecha" class="w-full p-4 border rounded-2xl bg-slate-50 outline-none focus:border-emerald-500 transition">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 text-[9px] uppercase">Entrada</label>
+                        <input type="time" id="res_hora_in" class="w-full p-4 border rounded-2xl bg-slate-50 focus:border-emerald-500 transition">
+                    </div>
+                    <div>
+                        <label class="text-slate-400 text-[9px] uppercase">Salida</label>
+                        <input type="time" id="res_hora_out" class="w-full p-4 border rounded-2xl bg-slate-50 focus:border-emerald-500 transition">
+                    </div>
+                </div>
+
+                <div id="res_edades_section" class="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 space-y-3 hidden">
+                    <p class="text-[10px] font-black uppercase text-emerald-800 text-center border-b border-emerald-200 pb-2">Categoría del Grupo</p>
+                    <select id="res_categoria_edad" class="w-full p-4 border rounded-2xl bg-white outline-none focus:border-emerald-500 transition font-black text-sm text-slate-700 shadow-sm cursor-pointer">
+                        <option value="Infantil">Infantil (Menores de 13)</option>
+                        <option value="Juvenil">Juvenil (13 a 17 años)</option>
+                        <option value="Adultos" selected>Adultos (+18)</option>
+                    </select>
+                </div>
+
+                <div id="res_evento_section" class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 space-y-4 hidden">
+                    <p class="text-[10px] font-black uppercase text-blue-800 text-center border-b border-blue-200 pb-2">Detalle del Evento</p>
+                    <div>
+                       <label class="text-blue-600 text-[9px] uppercase font-black">Cantidad Aproximada de Personas</label>
+                       <input type="number" id="res_evento_personas" min="1" placeholder="Ej. 25" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-blue-500 transition font-bold text-sm text-slate-700 shadow-sm">
+                    </div>
+                    <div>
+                       <label class="text-blue-600 text-[9px] uppercase font-black">Nombre del Encargado Responsable</label>
+                       <input type="text" id="res_evento_encargado" placeholder="Ej. Juan Pérez" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-blue-500 transition font-bold text-sm text-slate-700 shadow-sm">
+                    </div>
+                </div>
+
+                <!-- SECCIÓN MATERIALES (SIN PRECIO, SOLO CANTIDAD PARA CONTROL DE INVENTARIO) -->
+                <div id="res_extras_section" class="bg-slate-50 p-6 rounded-[2rem] border space-y-3">
+                    <p class="text-[10px] font-black uppercase text-slate-400 text-center border-b pb-2">Materiales / Implementos Solicitados (Opcional)</p>
+                    <div class="flex justify-between items-center"><span class="text-slate-600">Juego de Conos</span><input type="number" id="rent_conos" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
+                    <div class="flex justify-between items-center"><span class="text-slate-600">Set de Chalecos</span><input type="number" id="rent_chalecos" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
+                    <div class="flex justify-between items-center"><span class="text-slate-600">Balones</span><input type="number" id="rent_balones" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
+                </div>
+
+                <button id="btnSubmitRes" onclick="submitReserva()" class="w-full mt-4 bg-emerald-600 text-white py-5 rounded-2xl text-sm font-black uppercase shadow-lg hover:bg-emerald-500 transition">Confirmar Reserva</button>
+                <p id="guestResWarning" class="hidden text-red-500 text-xs font-bold text-center mt-2 uppercase">Debes iniciar sesión para reservar.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL TIPO DE RESERVA -->
+    <div id="modalResType" class="fixed inset-0 bg-slate-900/95 hidden z-[110] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-md w-full p-10 shadow-2xl relative text-center">
+            <button onclick="closeModal('modalResType')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-8 uppercase italic text-slate-800">¿Qué deseas reservar?</h3>
+            <div class="space-y-4">
+                <button onclick="openModalRes('Cancha Futbol')" class="w-full bg-emerald-600 text-white p-6 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 hover:scale-105 transition-all flex flex-col items-center gap-2">
+                    <i class="fas fa-futbol text-4xl"></i><span>Cancha de Fútbol</span>
+                </button>
+                <button onclick="openModalRes('Evento al Aire Libre')" class="w-full bg-blue-600 text-white p-6 rounded-2xl font-black uppercase shadow-lg hover:bg-blue-700 hover:scale-105 transition-all flex flex-col items-center gap-2">
+                    <i class="fas fa-tree text-4xl"></i><span>Evento al Aire Libre</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHAT INTEGRADO EN TIEMPO REAL -->
+    <div id="modalChat" class="fixed inset-0 bg-slate-900/95 hidden z-[130] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2rem] max-w-md w-full h-[620px] flex flex-col overflow-hidden shadow-2xl">
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
+                <div>
+                    <h3 id="chatHeaderName" class="font-black italic uppercase text-lg">Soporte</h3>
+                    <p class="text-[9px] text-emerald-400 font-bold tracking-widest">Canal de Comunicación</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div id="chatRoomDropdownContainer"></div>
+                    <button id="btnResetChat" onclick="clearSupportChat()" class="hidden text-red-400 hover:text-red-300 w-8 h-8 rounded-full bg-slate-800 transition" title="Limpiar Canales"><i class="fas fa-trash-alt"></i></button>
+                    <button onclick="closeModal('modalChat')" class="text-white hover:text-red-400 w-8 h-8 rounded-full bg-slate-800 transition"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+
+            <div id="chatMessages" class="flex-1 p-5 bg-slate-50 overflow-y-auto chat-scroll space-y-3 flex flex-col"></div>
+
+            <div id="chatAttachmentPreview" class="hidden bg-slate-100 p-3 border-t flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <img id="chat_img_thumb" class="w-10 h-10 rounded object-cover border">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Imagen adjunta</span>
+                </div>
+                <button onclick="removeChatAttachment()" class="text-red-500 hover:text-red-700"><i class="fas fa-times-circle text-lg"></i></button>
+            </div>
+
+            <div class="p-4 bg-white border-t flex gap-2 items-center">
+                <label class="bg-slate-100 text-slate-600 p-3.5 rounded-xl hover:bg-slate-200 cursor-pointer transition flex items-center justify-center" title="Adjuntar imagen">
+                    <i class="fas fa-paperclip"></i>
+                    <input type="file" id="chat_file_input" class="hidden" accept="image/*" onchange="handleChatFile(this)">
+                </label>
+                <input type="text" id="chatInput" placeholder="Escribe un mensaje..." class="flex-1 p-3.5 bg-slate-100 rounded-xl outline-none text-sm font-bold focus:bg-white border focus:border-blue-500 transition" onkeypress="if(event.key==='Enter') sendChatMessage()">
+                <button onclick="sendChatMessage()" class="bg-blue-600 text-white px-5 py-3.5 rounded-xl font-black hover:bg-blue-700 transition shadow-md"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lógica de la APP -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ⚠️ IMPORTANTE: si esta plataforma es para un cliente/institución distinta a tu app
+        // comercial CanchaMaster, cambia este firebaseConfig por un proyecto Firebase NUEVO
+        // para no mezclar datos (usuarios, reservas) entre ambos sistemas.
+        const firebaseConfig = {
+            apiKey: "AIzaSyBs8BO3_CRGa7MI3B6Z-Uslo273M1FQ6u0",
+            authDomain: "web-cancha.firebaseapp.com",
+            projectId: "web-cancha",
+            storageBucket: "web-cancha.firebasestorage.app",
+            messagingSenderId: "395535523926",
+            appId: "1:395535523926:web:64da8d94dadcb08981dbf7"
+        };
+
+        const fApp = initializeApp(firebaseConfig);
+        const auth = getAuth(fApp);
+        const db = getFirestore(fApp);
+
+        let currentUser = null;
+        let teams = [];
+        let reserves = [];
+        let messages = [];
+
+        let globalWhatsapp = "";
+        let globalInfo = "";
+
+        let currentResType = 'Cancha Futbol';
+        let regFotoBase64 = null;
+        let editFotoBase64 = null;
+        let editingClientId = null;
+        let editingResId = null;
+        let activeChatTeamId = null;
+        let chatAttachmentBase64 = null;
+        let unsubscribers = [];
+        let publicUnsubscribers = [];
+
+        window.showModal = (id) => { document.getElementById(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; };
+        window.closeModal = (id) => { document.getElementById(id).classList.add('hidden'); document.body.style.overflow = 'auto'; };
+        window.viewImage = (url) => { document.getElementById('fullImageViewer').src = url; showModal('modalImageViewer'); };
+        window.showRegister = () => { closeModal('loginModal'); showModal('modalReg'); };
+
+        window.switchTab = (tabId) => {
+            ['adminPanel', 'userPanel', 'equiposPanel', 'configPanel'].forEach(id => {
+                document.getElementById(id)?.classList.add('hidden');
+                document.getElementById(`tab_${id}`)?.classList.remove('bg-emerald-50', 'text-emerald-700');
+            });
+            document.getElementById(tabId)?.classList.remove('hidden');
+            const targetBtn = document.getElementById(`tab_${tabId}`);
+            if(targetBtn) targetBtn.classList.add('bg-emerald-50', 'text-emerald-700');
+        };
+
+        // Escucha pública en tiempo real de reservas y configuración
+        function setupPublicListeners() {
+            publicUnsubscribers.push(onSnapshot(doc(db, "config", "general"), (d) => {
+                if(d.exists()) {
+                    const data = d.data();
+                    if(data.whatsapp) globalWhatsapp = data.whatsapp;
+                    if(data.info) {
+                        globalInfo = data.info;
+                        const infoEl = document.getElementById('publicInfoText');
+                        if(infoEl) infoEl.innerText = globalInfo;
+                    }
+                }
+            }));
+            publicUnsubscribers.push(onSnapshot(collection(db, "reservations"), (s) => {
+                reserves = s.docs.map(d => ({id:d.id, ...d.data()}));
+                renderPublicSchedule();
+                if (currentUser) render();
+            }));
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            const overlay = document.getElementById('loadingOverlay');
+            if (user) {
+                try {
+                    const userDoc = await getDoc(doc(db, "teams", user.uid));
+                    currentUser = userDoc.exists() ? { id: user.uid, ...userDoc.data() } : { id: user.uid, role: 'user', teamName: user.email, representative: 'N/A' };
+                    setupRealtimeListeners();
+                    showAppUI();
+                } catch(e) { console.error(e); handleLogout(); }
+            } else { currentUser = null; clearListeners(); hideAppUI(); }
+            overlay.classList.add('hidden');
+        });
+
+        function setupRealtimeListeners() {
+            clearListeners();
+            if (currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+                unsubscribers.push(onSnapshot(collection(db, "teams"), (s) => { teams = s.docs.map(d => ({id:d.id, ...d.data()})); render(); }));
+                unsubscribers.push(onSnapshot(collection(db, "messages"), (s) => { messages = s.docs.map(d => ({id:d.id, ...d.data()})); renderChat(); }));
+            } else {
+                unsubscribers.push(onSnapshot(doc(db, "teams", currentUser.id), (d) => { if (d.exists()) { currentUser = {id:d.id, ...d.data()}; teams = [currentUser]; render(); } }));
+                unsubscribers.push(onSnapshot(query(collection(db, "messages"), where("teamId", "==", currentUser.id)), (s) => { messages = s.docs.map(d => ({id:d.id, ...d.data()})); renderChat(); }));
+            }
+        }
+        function clearListeners() { unsubscribers.forEach(u => u()); unsubscribers = []; }
+
+        function showAppUI() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('navActions').classList.add('hidden');
+            document.getElementById('navUserZone').classList.remove('hidden');
+            document.getElementById('userNameDisplay').innerText = currentUser.teamName || currentUser.representative;
+            document.getElementById('userRoleDisplay').innerText = currentUser.role === 'superadmin' ? 'Super Administrador' : (currentUser.role === 'admin' ? 'Encargado (Admin)' : 'Usuario');
+
+            document.getElementById('adminTabs').classList.remove('hidden');
+            if(currentUser.role === 'superadmin') {
+                document.getElementById('btnResetChat')?.classList.remove('hidden');
+                document.getElementById('btnWaAdmin')?.classList.remove('hidden');
+            } else {
+                document.getElementById('btnWaAdmin')?.classList.add('hidden');
+            }
+
+            if(currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+                ['tab_adminPanel', 'tab_equiposPanel'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+                document.getElementById('btnChatAdmin').classList.remove('hidden');
+                if(currentUser.role === 'superadmin') {
+                    document.getElementById('tab_configPanel').classList.remove('hidden');
+                }
+                switchTab('adminPanel');
+            } else {
+                document.getElementById('btnNewRes').classList.remove('hidden');
+                document.getElementById('btnChatAdmin').classList.remove('hidden');
+                document.getElementById('tab_userPanel').classList.remove('hidden');
+                document.getElementById('userWelcomeText').innerText = `Hola, ${currentUser.representative}`;
+                switchTab('userPanel');
+            }
+        }
+
+        function hideAppUI() {
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('navActions').classList.remove('hidden');
+            document.getElementById('navUserZone').classList.add('hidden');
+            document.getElementById('adminTabs').classList.add('hidden');
+        }
+
+        window.openWaAdmin = () => {
+            if(!globalWhatsapp) return alert("El encargado aún no ha configurado un número de WhatsApp.");
+            window.open(`https://wa.me/506${globalWhatsapp.replace(/\D/g,'')}`, '_blank');
+        };
+
+        // Pizarra de ocupación pública: listado inteligente de días ocupados
+        window.renderPublicSchedule = () => {
+            const board = document.getElementById('publicReservationsBoard');
+            if(!board) return;
+
+            const activeRes = reserves.filter(r => r.status !== 'Rechazada');
+            const grouped = {};
+            activeRes.forEach(r => {
+                if(!grouped[r.date]) grouped[r.date] = [];
+                grouped[r.date].push(r);
+            });
+
+            const dates = Object.keys(grouped).sort();
+            if(dates.length === 0) {
+                board.innerHTML = `<div class="col-span-full text-center text-slate-400 py-10 font-bold uppercase text-xs">Todos los horarios libres en los próximos días</div>`;
+                return;
+            }
+
+            board.innerHTML = dates.map(d => {
+                const daySlots = grouped[d].map(r => `
+                    <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700/50">
+                        <span class="text-emerald-400 font-bold text-xs">${r.hourIn} - ${r.hourOut}</span>
+                        <span class="bg-red-500/20 text-red-400 px-2.5 py-0.5 rounded text-[8px] font-black uppercase">Ocupado</span>
+                    </div>
+                `).join('<div class="h-2"></div>');
+
+                const [yr, mo, dy] = d.split('-');
+                return `
+                <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 flex flex-col justify-between shadow-inner">
+                    <div>
+                        <p class="text-xs font-black uppercase text-slate-400 tracking-wider mb-3 flex items-center gap-2">
+                            <i class="far fa-calendar-alt text-emerald-400"></i> ${dy}/${mo}/${yr}
+                        </p>
+                        <div class="space-y-1">
+                            ${daySlots}
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        // GESTIÓN UNIFICADA DE PERFIL DE USUARIOS
+        window.openProfile = () => {
+            if(!currentUser) return;
+            document.getElementById('profile_name').value = currentUser.teamName || currentUser.representative || '';
+            document.getElementById('profile_cedula').value = currentUser.cedula || '';
+            document.getElementById('profile_phone').value = currentUser.phone || '';
+
+            if(currentUser.fotoCedula) {
+                document.getElementById('profile_photo_preview').src = currentUser.fotoCedula;
+                document.getElementById('profile_photo_preview').classList.remove('hidden');
+                document.getElementById('lbl_profile_photo').innerHTML = "<i class='fas fa-check text-emerald-500'></i> Foto Cargada";
+            } else {
+                document.getElementById('profile_photo_preview').classList.add('hidden');
+                document.getElementById('lbl_profile_photo').innerHTML = "<i class='fas fa-camera'></i> Subir Foto";
+            }
+            showModal('modalProfile');
+        };
+
+        window.handleProfilePhoto = (input) => {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let scale = img.width > 600 ? 600 / img.width : 1;
+                    canvas.width = img.width * scale; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0,0, canvas.width, canvas.height);
+                    const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById('profile_photo_preview').src = base64;
+                    document.getElementById('profile_photo_preview').classList.remove('hidden');
+                    document.getElementById('lbl_profile_photo').innerHTML = "<i class='fas fa-check text-emerald-500'></i> Foto Lista";
+                }
+            }; reader.readAsDataURL(file);
+        };
+
+        window.saveProfile = async () => {
+            if(!currentUser) return;
+            const name = document.getElementById('profile_name').value.trim();
+            const cedula = document.getElementById('profile_cedula').value.trim();
+            const phone = document.getElementById('profile_phone').value.trim();
+            const imgPreview = document.getElementById('profile_photo_preview');
+            const imgBase64 = imgPreview.classList.contains('hidden') ? null : imgPreview.src;
+
+            if(!name || !cedula || !phone) return alert("Todos los campos son obligatorios.");
+
+            try {
+                const payload = { teamName: name, representative: name, cedula, phone };
+                if(imgBase64 && imgBase64.startsWith('data:image')) payload.fotoCedula = imgBase64;
+                await updateDoc(doc(db, "teams", currentUser.id), payload);
+                alert("Información personal guardada con éxito.");
+                closeModal('modalProfile');
+            } catch(e) { alert("Error al guardar información: " + e.message); }
+        };
+
+        window.openEditReservation = (id) => {
+            const r = reserves.find(x => x.id === id); if(!r) return;
+            editingResId = id;
+            document.getElementById('edit_res_teamName').value = r.teamName || '';
+            document.getElementById('edit_res_date').value = r.date || '';
+            document.getElementById('edit_res_hourIn').value = r.hourIn || '';
+            document.getElementById('edit_res_hourOut').value = r.hourOut || '';
+            showModal('modalEditReservation');
+        };
+
+        window.saveEditReservation = async () => {
+            if(!editingResId) return;
+            const tName = document.getElementById('edit_res_teamName').value;
+            const rDate = document.getElementById('edit_res_date').value;
+            const hIn = document.getElementById('edit_res_hourIn').value;
+            const hOut = document.getElementById('edit_res_hourOut').value;
+
+            try {
+                await updateDoc(doc(db, "reservations", editingResId), {
+                    teamName: tName, date: rDate, hourIn: hIn, hourOut: hOut
+                });
+                alert("Reserva editada correctamente.");
+                closeModal('modalEditReservation');
+            } catch(e) { alert(e.message); }
+        };
+
+        // CHAT DE SOPORTE EN TIEMPO REAL
+        window.openUserChat = () => {
+            if(currentUser.role === 'admin' || currentUser.role === 'superadmin') {
+                activeChatTeamId = 'admin_superadmin';
+                document.getElementById('chatHeaderName').innerText = 'Chat Admin <-> SuperAdmin';
+
+                let chatRooms = [{id: 'admin_superadmin', name: 'Chat Admin <-> SuperAdmin'}];
+                teams.filter(t => t.role === 'user').forEach(t => {
+                    chatRooms.push({id: t.id, name: `Usuario: ${t.teamName || t.representative}`});
+                });
+
+                document.getElementById('chatRoomDropdownContainer').innerHTML = `
+                    <select id="chatRoomSelector" onchange="changeChatRoom(this.value)" class="bg-slate-800 text-white text-[10px] font-black uppercase rounded-lg p-2 border border-slate-700 outline-none">
+                        ${chatRooms.map(r => `<option value="${r.id}" ${activeChatTeamId === r.id ? 'selected' : ''}>${r.name}</option>`).join('')}
+                    </select>
+                `;
+            } else {
+                activeChatTeamId = currentUser.id;
+                document.getElementById('chatHeaderName').innerText = 'Soporte / Chat';
+                document.getElementById('chatRoomDropdownContainer').innerHTML = '';
+            }
+            showModal('modalChat');
+            renderChat();
+        };
+
+        window.openPrivateChat = (teamId, teamName) => {
+            activeChatTeamId = teamId;
+            document.getElementById('chatHeaderName').innerText = teamName;
+
+            let chatRooms = [{id: 'admin_superadmin', name: 'Chat Admin <-> SuperAdmin'}];
+            teams.filter(t => t.role === 'user').forEach(t => {
+                chatRooms.push({id: t.id, name: `Usuario: ${t.teamName || t.representative}`});
+            });
+
+            document.getElementById('chatRoomDropdownContainer').innerHTML = `
+                <select id="chatRoomSelector" onchange="changeChatRoom(this.value)" class="bg-slate-800 text-white text-[10px] font-black uppercase rounded-lg p-2 border border-slate-700 outline-none">
+                    ${chatRooms.map(r => `<option value="${r.id}" ${activeChatTeamId === r.id ? 'selected' : ''}>${r.name}</option>`).join('')}
+                </select>
+            `;
+            showModal('modalChat');
+            renderChat();
+        };
+
+        window.changeChatRoom = (roomId) => {
+            activeChatTeamId = roomId;
+            const target = teams.find(t => t.id === roomId);
+            document.getElementById('chatHeaderName').innerText = roomId === 'admin_superadmin' ? 'Chat Admin <-> SuperAdmin' : (target ? target.teamName : 'Soporte');
+            renderChat();
+        };
+
+        window.handleChatFile = (input) => {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let scale = img.width > 600 ? 600 / img.width : 1;
+                    canvas.width = img.width * scale; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0,0, canvas.width, canvas.height);
+                    chatAttachmentBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById('chat_img_thumb').src = chatAttachmentBase64;
+                    document.getElementById('chatAttachmentPreview').classList.remove('hidden');
+                }
+            }; reader.readAsDataURL(file);
+        };
+
+        window.removeChatAttachment = () => {
+            chatAttachmentBase64 = null;
+            document.getElementById('chatAttachmentPreview').classList.add('hidden');
+            document.getElementById('chat_file_input').value = '';
+        };
+
+        window.sendChatMessage = async () => {
+            const input = document.getElementById('chatInput');
+            const txt = input.value.trim();
+            if(!txt && !chatAttachmentBase64) return;
+
+            const payload = {
+                teamId: activeChatTeamId || currentUser.id,
+                senderId: currentUser.id,
+                senderName: currentUser.teamName || currentUser.representative || 'Usuario',
+                text: txt,
+                image: chatAttachmentBase64 || null,
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                await addDoc(collection(db, "messages"), payload);
+                input.value = '';
+                removeChatAttachment();
+            } catch(e) { alert("Error al enviar: " + e.message); }
+        };
+
+        window.renderChat = () => {
+            const container = document.getElementById('chatMessages');
+            if(!container) return;
+
+            const activeMsgs = messages
+                .filter(m => m.teamId === (activeChatTeamId || currentUser.id))
+                .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+            container.innerHTML = activeMsgs.map(m => {
+                const isMe = m.senderId === currentUser.id;
+                const align = isMe ? 'self-end bg-blue-600 text-white rounded-tr-none' : 'self-start bg-slate-100 text-slate-800 rounded-tl-none';
+                const img = m.image ? `<img src="${m.image}" class="max-w-[180px] rounded-lg mt-2 cursor-pointer shadow-sm border border-slate-200" onclick="viewImage('${m.image}')">` : '';
+                return `
+                <div class="max-w-[80%] ${align} p-3.5 rounded-2xl shadow-sm text-xs flex flex-col">
+                    <span class="font-black text-[9px] uppercase tracking-wider mb-1 opacity-70">${m.senderName}</span>
+                    <p class="font-bold leading-relaxed">${m.text}</p>
+                    ${img}
+                    <span class="text-[8px] opacity-50 mt-1.5 self-end">${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>`;
+            }).join('<div class="h-3"></div>');
+            container.scrollTop = container.scrollHeight;
+        };
+
+        window.clearSupportChat = async () => {
+            if(!confirm("⚠️ ¿Deseas borrar de forma definitiva este historial de comunicación?")) return;
+            try {
+                const activeMsgs = messages.filter(m => m.teamId === (activeChatTeamId || currentUser.id));
+                for(let m of activeMsgs) { await deleteDoc(doc(db, "messages", m.id)); }
+                alert("Canal limpiado exitosamente.");
+            } catch(e) { alert("Error al limpiar: " + e.message); }
+        };
+
+        // EXPORTACIÓN DEL LISTADO DE RESERVAS A PDF (SIN DATOS FINANCIEROS)
+        window.exportReservasPDF = () => {
+            const { jsPDF } = window.jspdf;
+            const docPdf = new jsPDF();
+
+            docPdf.setFillColor(15, 23, 42);
+            docPdf.rect(0, 0, 210, 30, 'F');
+            docPdf.setTextColor(255, 255, 255);
+            docPdf.setFont("helvetica", "bold");
+            docPdf.setFontSize(18);
+            docPdf.text("CONTROL DE RESERVAS - CANCHA", 14, 19);
+
+            const rows = reserves
+                .sort((a,b)=> new Date(a.date) - new Date(b.date))
+                .map(r => [
+                    r.date || '', `${r.hourIn || ''} - ${r.hourOut || ''}`, r.type || '',
+                    r.teamName || '', r.categoriaEdad || (r.type === 'Evento al Aire Libre' ? 'Evento' : ''), r.status || ''
+                ]);
+
+            docPdf.autoTable({
+                startY: 38,
+                head: [['Fecha', 'Horario', 'Tipo', 'Solicitante', 'Categoría', 'Estado']],
+                body: rows,
+                theme: 'grid',
+                headStyles: { fillColor: [16, 185, 129] },
+                styles: { fontSize: 9 }
+            });
+
+            docPdf.save(`Reservas_Cancha_${new Date().toISOString().slice(0,10)}.pdf`);
+        };
+
+        // RENDERIZADOS Y COMPORTAMIENTOS DINÁMICOS
+        window.render = () => {
+            const aTbody = document.getElementById('adminTableBody');
+            if(aTbody && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+                aTbody.innerHTML = reserves.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).map(r => {
+                    let catText = r.type === 'Evento al Aire Libre' ? `<br><span class="text-[9px] text-blue-500 uppercase font-black">Aprox: ${r.eventoPersonas} personas | Encargado: ${r.eventoEncargado}</span>` : `<br><span class="text-[9px] text-blue-500 uppercase font-black">${r.categoriaEdad || 'N/A'}</span>`;
+                    return `
+                    <tr>
+                        <td class="p-4"><p class="font-bold">${r.date}</p><p class="text-[10px] text-slate-500 uppercase">${r.hourIn} - ${r.hourOut} | ${r.type}</p></td>
+                        <td class="p-4 font-bold text-emerald-700">${r.teamName}${catText}</td>
+                        <td class="p-4 text-xs text-slate-500">${r.type==='Cancha Futbol' ? `Conos: ${r.implementos?.conos||0}, Chalecos: ${r.implementos?.chalecos||0}, Balones: ${r.implementos?.balones||0}` : 'No aplica'}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex flex-col gap-1 items-center">
+                                ${r.status === 'Pendiente' ? `<button onclick="updateResStatus('${r.id}', 'Aprobada')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-[10px] font-black uppercase">Aprobar</button>` : `<span class="px-3 py-1 rounded text-[10px] font-black uppercase ${r.status==='Aprobada'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${r.status}</span>`}
+                                <button onclick="openEditReservation('${r.id}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-black uppercase block hover:bg-blue-200 mt-1"><i class="fas fa-edit"></i> Editar</button>
+                                ${currentUser.role === 'superadmin' ? `<button onclick="deleteReserva('${r.id}')" class="bg-slate-200 text-slate-600 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-slate-300 mt-1"><i class="fas fa-trash"></i> Borrar</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>`
+                }).join('');
+            }
+
+            const uList = document.getElementById('userResList');
+            if(uList && currentUser.role === 'user') {
+                const myRes = reserves.filter(r => r.teamId === currentUser.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+                uList.innerHTML = myRes.length ? myRes.map(r => `
+                    <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-full h-2 ${r.status==='Aprobada'?'bg-emerald-400':r.status==='Rechazada'?'bg-red-400':'bg-amber-400'}"></div>
+                        <h4 class="font-black italic uppercase text-lg text-slate-800 mt-2">${r.type}</h4>
+                        <p class="text-xs font-bold text-slate-500 mb-4"><i class="far fa-calendar-alt"></i> ${r.date} | ${r.hourIn} - ${r.hourOut}</p>
+                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl"><span class="text-[10px] font-black uppercase text-slate-400">Estado</span><span class="text-xs font-black uppercase ${r.status==='Aprobada'?'text-emerald-500':r.status==='Rechazada'?'text-red-500':'text-amber-500'}">${r.status}</span></div>
+                    </div>
+                `).join('') : '<p class="text-slate-400 font-bold text-sm">No tienes reservas aún.</p>';
+            }
+
+            const eTbody = document.getElementById('equiposTableBody');
+            if(eTbody && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+                const usersOnly = teams.filter(t => t.role === 'user');
+                eTbody.innerHTML = usersOnly.map(t => `
+                    <tr>
+                        <td class="p-4">
+                            <p class="font-black text-slate-700">${t.teamName}</p>
+                            <p class="text-[10px] text-emerald-600 uppercase font-bold">${t.tipoRegistro || 'equipo'}</p>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-bold text-xs text-slate-600">${t.cedula || 'N/A'}</p>
+                            ${t.fotoCedula ? `<button onclick="viewImage('${t.fotoCedula}')" class="text-[9px] bg-slate-100 px-2 py-1 rounded text-slate-600 mt-1"><i class="fas fa-image"></i> Ver Foto</button>` : ''}
+                        </td>
+                        <td class="p-4 font-bold text-xs text-slate-600">${t.phone || 'N/A'}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="openPrivateChat('${t.id}', '${t.teamName || t.representative}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 hover:bg-blue-200"><i class="fas fa-comments"></i> Chat</button>
+                                ${currentUser.role === 'superadmin' ? `<button onclick="openEditClient('${t.id}')" class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-amber-200"><i class="fas fa-edit"></i> Editar</button> <button onclick="deleteClient('${t.id}')" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200"><i class="fas fa-trash"></i> Borrar</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        };
+
+        window.openEditClient = (id) => {
+            const t = teams.find(x => x.id === id); if(!t) return;
+            editingClientId = id;
+            document.getElementById('edit_client_name').value = t.teamName || t.representative || '';
+            document.getElementById('edit_client_cedula').value = t.cedula || '';
+            document.getElementById('edit_client_phone').value = t.phone || '';
+            editFotoBase64 = null;
+            showModal('modalEditClient');
+        };
+
+        window.handleEditFoto = (input) => {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let scale = img.width > 600 ? 600 / img.width : 1;
+                    canvas.width = img.width * scale; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0,0, canvas.width, canvas.height);
+                    editFotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    alert("Foto Lista para guardar.");
+                }
+            }; reader.readAsDataURL(file);
+        };
+
+        window.saveEditClient = async () => {
+            const n = document.getElementById('edit_client_name').value;
+            const c = document.getElementById('edit_client_cedula').value;
+            const p = document.getElementById('edit_client_phone').value;
+            try {
+                const payload = { teamName: n, representative: n, cedula: c, phone: p };
+                if(editFotoBase64) payload.fotoCedula = editFotoBase64;
+                await updateDoc(doc(db, "teams", editingClientId), payload);
+                alert("Usuario actualizado exitosamente.");
+                closeModal('modalEditClient');
+            } catch(e) { alert(e.message); }
+        };
+
+        window.deleteClient = async (id) => {
+            if(!confirm("⚠️ ATENCIÓN: ¿Borrar usuario permanentemente?")) return;
+            try { await deleteDoc(doc(db, "teams", id)); } catch(e) { alert(e.message); }
+        };
+
+        window.deleteReserva = async (id) => {
+            if(!confirm("⚠️ ¿Borrar reserva permanentemente?")) return;
+            try { await deleteDoc(doc(db, "reservations", id)); } catch(e) { alert(e.message); }
+        };
+
+        window.toggleRegType = () => {
+            const v = document.getElementById('reg_type').value;
+            if(v === 'equipo') {
+                document.getElementById('reg_fields_equipo').classList.remove('hidden');
+                document.getElementById('reg_fields_evento').classList.add('hidden');
+            } else {
+                document.getElementById('reg_fields_equipo').classList.add('hidden');
+                document.getElementById('reg_fields_evento').classList.remove('hidden');
+            }
+        };
+
+        window.handleRegFoto = (input) => {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let scale = img.width > 600 ? 600 / img.width : 1;
+                    canvas.width = img.width * scale; canvas.height = img.height * scale;
+                    canvas.getContext('2d').drawImage(img, 0,0, canvas.width, canvas.height);
+                    regFotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+                    document.getElementById('lbl_reg_foto').innerHTML = "<i class='fas fa-check text-emerald-500'></i> FOTO ADJUNTA";
+                }
+            }; reader.readAsDataURL(file);
+        };
+
+        window.handleRegister = async () => {
+            const type = document.getElementById('reg_type').value;
+            const cedula = document.getElementById('reg_cedula').value.trim();
+            const phone = document.getElementById('reg_phone').value.trim();
+            const email = document.getElementById('reg_email').value.trim();
+            const pass = document.getElementById('reg_pass').value.trim();
+
+            if(!cedula || !email || !pass) return alert("Cédula, Correo y Contraseña son obligatorios.");
+
+            let teamName = '', repName = '', edades = '', objetivo = '';
+
+            if(type === 'equipo') {
+                teamName = document.getElementById('reg_team_name').value.trim();
+                edades = document.getElementById('reg_team_ages').value.trim();
+                repName = teamName;
+                if(!teamName) return alert("Nombre del equipo/grupo obligatorio.");
+            } else {
+                repName = document.getElementById('reg_event_name').value.trim();
+                objetivo = document.getElementById('reg_event_obj').value.trim();
+                teamName = repName;
+                if(!repName || !objetivo) return alert("Nombre y Objetivo obligatorios.");
+            }
+
+            document.getElementById('btnDoRegister').innerText = "PROCESANDO..."; document.getElementById('btnDoRegister').disabled = true;
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                await setDoc(doc(db, "teams", userCredential.user.uid), {
+                    tipoRegistro: type, teamName, representative: repName, cedula, phone, email, edades, objetivo,
+                    fotoCedula: regFotoBase64 || null,
+                    role: 'user', status: 'active', createdAt: new Date().toISOString()
+                });
+                alert("Cuenta creada correctamente."); closeModal('modalReg');
+            } catch(e) { alert("Error: " + e.message); }
+
+            document.getElementById('btnDoRegister').innerText = "Crear Cuenta"; document.getElementById('btnDoRegister').disabled = false;
+        };
+
+        window.handleLogin = async () => {
+            const e = document.getElementById('loginEmail').value; const p = document.getElementById('loginPass').value;
+            if(!e || !p) return;
+            try { await signInWithEmailAndPassword(auth, e, p); closeModal('loginModal'); } catch(err) { alert("Credenciales incorrectas."); }
+        };
+        window.handleLogout = async () => { if(confirm("¿Cerrar sesión?")) { await signOut(auth); location.reload(); } };
+
+        window.openModalRes = (type) => {
+            currentResType = type;
+            document.getElementById('resTitleType').innerText = type;
+            document.getElementById('res_fecha').value = ''; document.getElementById('res_hora_in').value = ''; document.getElementById('res_hora_out').value = '';
+            document.getElementById('rent_conos').value = 0; document.getElementById('rent_chalecos').value = 0; document.getElementById('rent_balones').value = 0;
+
+            if(type === 'Cancha Futbol') {
+                document.getElementById('res_edades_section').classList.remove('hidden');
+                document.getElementById('res_evento_section').classList.add('hidden');
+                document.getElementById('res_extras_section').classList.remove('hidden');
+            } else {
+                document.getElementById('res_edades_section').classList.add('hidden');
+                document.getElementById('res_evento_section').classList.remove('hidden');
+                document.getElementById('res_extras_section').classList.add('hidden');
+            }
+            closeModal('modalResType'); showModal('modalRes');
+        };
+
+        window.submitReserva = async () => {
+            if(!currentUser) return alert("Debe iniciar sesión para reservar.");
+            const date = document.getElementById('res_fecha').value;
+            const hIn = document.getElementById('res_hora_in').value;
+            const hOut = document.getElementById('res_hora_out').value;
+            if(!date || !hIn || !hOut) return alert("Complete la fecha y las horas de la reserva.");
+
+            // Validación de Conflicto de Horarios
+            const conflict = reserves.find(r => r.date === date && r.status !== 'Rechazada' && (
+                (hIn >= r.hourIn && hIn < r.hourOut) ||
+                (hOut > r.hourIn && hOut <= r.hourOut) ||
+                (r.hourIn >= hIn && r.hourOut <= hOut)
+            ));
+            if(conflict) return alert(`🚨 Conflicto: Ya existe una reserva ocupando de ${conflict.hourIn} a ${conflict.hourOut}.`);
+
+            const payload = {
+                teamId: currentUser.id, teamName: currentUser.teamName || currentUser.representative,
+                type: currentResType, date, hourIn: hIn, hourOut: hOut, status: 'Pendiente', createdAt: new Date().toISOString()
+            };
+
+            if(currentResType === 'Evento al Aire Libre') {
+                payload.eventoPersonas = document.getElementById('res_evento_personas').value;
+                payload.eventoEncargado = document.getElementById('res_evento_encargado').value;
+                if(!payload.eventoPersonas || !payload.eventoEncargado) return alert("Cantidad de personas y encargado requeridos.");
+            } else {
+                payload.categoriaEdad = document.getElementById('res_categoria_edad').value;
+                payload.implementos = {
+                    conos: parseInt(document.getElementById('rent_conos').value || 0),
+                    chalecos: parseInt(document.getElementById('rent_chalecos').value || 0),
+                    balones: parseInt(document.getElementById('rent_balones').value || 0)
+                };
+            }
+
+            document.getElementById('btnSubmitRes').innerText = "Procesando..."; document.getElementById('btnSubmitRes').disabled = true;
+            try { await addDoc(collection(db, "reservations"), payload); alert("Reserva enviada a validación."); closeModal('modalRes'); }
+            catch(e) { alert("Error: " + e.message); }
+            document.getElementById('btnSubmitRes').innerText = "Confirmar Reserva"; document.getElementById('btnSubmitRes').disabled = false;
+        };
+
+        window.updateResStatus = async (id, status) => { try { await updateDoc(doc(db, "reservations", id), { status }); } catch(e) {} };
+
+        window.saveConfig = async () => {
+            const whatsapp = document.getElementById('config_whatsapp').value.trim();
+            const info = document.getElementById('config_info').value.trim();
+            try {
+                await setDoc(doc(db, "config", "general"), { whatsapp, info }, { merge: true });
+                alert("Configuración Guardada.");
+            } catch(e) { alert(e.message); }
+        };
+
+        window.onload = () => { setupPublicListeners(); document.getElementById('loadingOverlay').classList.add('hidden'); };
+
+    </script>
+</body>
+</html>
