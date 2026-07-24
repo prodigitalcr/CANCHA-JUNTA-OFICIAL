@@ -71,6 +71,14 @@
             <p class="text-slate-400 text-xs text-center font-bold mb-8 uppercase tracking-wider">Fechas con bloques reservados / ocupados</p>
             <div id="publicReservationsBoard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-h-[400px] overflow-y-auto chat-scroll pr-2"></div>
         </div>
+
+        <!-- Reglas de Orden y Aseo -->
+        <div class="w-full max-w-5xl bg-red-950/80 backdrop-blur border border-red-500/30 rounded-[2.5rem] p-8 shadow-2xl z-10 mt-6">
+            <h3 class="text-white text-xl font-black italic uppercase mb-4 text-center flex items-center justify-center gap-3">
+                <i class="fas fa-exclamation-triangle text-red-400"></i> Reglas de Orden y Aseo
+            </h3>
+            <p id="publicRulesText" class="text-red-100 text-xs font-bold leading-relaxed whitespace-pre-line text-center max-w-2xl mx-auto"></p>
+        </div>
     </section>
 
     <main id="app" class="p-6 max-w-7xl mx-auto hidden min-h-[80vh]">
@@ -97,7 +105,7 @@
             <div class="bg-white rounded-[2rem] border shadow-sm overflow-hidden overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                        <tr><th class="p-6">Reserva / Tipo</th><th class="p-6">Solicitante / Detalle</th><th class="p-6">Materiales</th><th class="p-6 text-center">Gestión / Acciones</th></tr>
+                        <tr><th class="p-6">Reserva / Tipo</th><th class="p-6">Solicitante / Detalle</th><th class="p-6">Responsable / Personas</th><th class="p-6 text-center">Gestión / Acciones</th></tr>
                     </thead>
                     <tbody id="adminTableBody" class="text-xs font-bold divide-y text-slate-600"></tbody>
                 </table>
@@ -119,7 +127,10 @@
             </div>
 
             <div>
-                <h4 class="text-xl font-black text-slate-800 uppercase italic mb-4">Mis Reservas Recientes</h4>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-xl font-black text-slate-800 uppercase italic">Mis Reservas Recientes</h4>
+                    <button onclick="exportMyHistoryPDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase transition flex items-center gap-2 shadow-lg"><i class="fas fa-file-pdf text-red-400"></i> Exportar Mi Historial</button>
+                </div>
                 <div id="userResList" class="grid md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2 chat-scroll"></div>
             </div>
         </div>
@@ -140,17 +151,21 @@
         <div id="configPanel" class="hidden space-y-6 animate-fade-in">
             <div class="bg-white rounded-[2.5rem] border shadow-sm p-8 max-w-lg mx-auto">
                 <div class="bg-amber-100 text-amber-800 p-4 rounded-xl text-[10px] font-black uppercase mb-6 flex gap-3 items-center">
-                    <i class="fas fa-shield-alt text-2xl"></i> ZONA RESTRINGIDA PARA SUPERADMINISTRADOR
+                    <i class="fas fa-shield-alt text-2xl"></i> ZONA RESTRINGIDA PARA ADMINISTRADORES
                 </div>
                 <h3 class="text-2xl font-black mb-6 uppercase italic">Configuración Base</h3>
                 <div class="space-y-6">
                     <div>
                         <label class="text-xs font-black text-slate-400 uppercase">WhatsApp del Encargado de la Cancha</label>
-                        <input type="text" id="config_whatsapp" placeholder="Ej: 8888-8888" class="w-full p-4 border-2 rounded-2xl font-black text-emerald-600 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition text-lg tracking-widest text-center">
+                        <input type="text" id="config_whatsapp" oninput="this.dataset.touched='1'" placeholder="Ej: 8888-8888" class="w-full p-4 border-2 rounded-2xl font-black text-emerald-600 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition text-lg tracking-widest text-center">
                     </div>
                     <div>
                         <label class="text-xs font-black text-slate-400 uppercase">Información Pública (Horario / Reglas de Uso)</label>
-                        <textarea id="config_info" placeholder="Ej: Horario disponible de 7am a 6pm. Uso prioritario para actividades del centro educativo." class="w-full p-4 border-2 rounded-2xl font-bold text-slate-700 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition h-28"></textarea>
+                        <textarea id="config_info" oninput="this.dataset.touched='1'" placeholder="Ej: Horario disponible de 7am a 6pm. Uso prioritario para actividades del centro educativo." class="w-full p-4 border-2 rounded-2xl font-bold text-slate-700 bg-slate-50 outline-none mt-2 focus:border-emerald-500 transition h-28"></textarea>
+                    </div>
+                    <div>
+                        <label class="text-xs font-black text-red-500 uppercase"><i class="fas fa-exclamation-triangle"></i> Reglas de Orden y Aseo (Visibles para el Solicitante)</label>
+                        <textarea id="config_rules" oninput="this.dataset.touched='1'" placeholder="Ej: Se prohíben peleas, malas palabras, discriminación..." class="w-full p-4 border-2 rounded-2xl font-bold text-slate-700 bg-slate-50 outline-none mt-2 focus:border-red-500 transition h-40"></textarea>
                     </div>
                     <button onclick="saveConfig()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase shadow-xl hover:bg-slate-800 transition">Guardar Configuración</button>
                 </div>
@@ -173,7 +188,11 @@
             <h3 class="text-2xl font-black mb-6 uppercase italic text-slate-800"><i class="fas fa-user-edit text-emerald-600"></i> Mi Información</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-black uppercase text-slate-400">Nombre Completo</label>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Nombre del Equipo / Grupo</label>
+                    <input type="text" id="profile_team_name" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-400">Nombre del Representante</label>
                     <input type="text" id="profile_name" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none">
                 </div>
                 <div>
@@ -205,7 +224,8 @@
             <button onclick="closeModal('modalEditReservation')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
             <h3 class="text-2xl font-black mb-6 uppercase italic text-emerald-600"><i class="fas fa-calendar-edit"></i> Editar Reserva</h3>
             <div class="space-y-4">
-                <div>
+                <p id="edit_res_user_note" class="hidden bg-amber-50 text-amber-700 text-[10px] font-black uppercase p-3 rounded-xl"><i class="fas fa-info-circle"></i> Solo puedes editar la fecha y hora una vez, y hasta 24 horas antes de tu reserva.</p>
+                <div id="edit_res_teamName_wrap">
                     <label class="text-[10px] font-black uppercase text-slate-400">Usuario / Equipo</label>
                     <input type="text" id="edit_res_teamName" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
                 </div>
@@ -224,6 +244,66 @@
                     </div>
                 </div>
                 <button onclick="saveEditReservation()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-emerald-700 transition">Confirmar y Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ASISTENCIA (ADMIN): CHECKLIST + FIRMA + FOTO ENTRADA/SALIDA -->
+    <div id="modalAsistencia" class="fixed inset-0 bg-slate-900/95 hidden z-[250] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[3rem] max-w-2xl w-full p-8 md:p-10 shadow-2xl max-h-[95vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeAsistencia()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-2 uppercase italic text-amber-600"><i class="fas fa-clipboard-check"></i> Control de Asistencia</h3>
+            <p id="asis_reserva_info" class="text-xs font-bold text-slate-500 mb-6"></p>
+
+            <div class="bg-slate-50 border rounded-[2rem] p-6 mb-6 space-y-3">
+                <p class="text-[10px] font-black uppercase text-slate-400">Verificación de Cantidad de Personas</p>
+                <div>
+                    <label class="text-[9px] font-black uppercase text-slate-400">Cantidad Real de Personas Presentes</label>
+                    <input type="number" id="asis_personas_reales" min="0" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-amber-500 font-bold text-sm">
+                </div>
+                <label class="flex items-center gap-2 pt-1 cursor-pointer">
+                    <input type="checkbox" id="asis_personas_ok" class="w-4 h-4 accent-amber-600">
+                    <span class="text-[10px] font-black uppercase text-slate-600">Confirmo que la cantidad presente es igual o menor a la declarada</span>
+                </label>
+                <button onclick="saveAsistenciaChecklist()" class="w-full mt-2 bg-amber-500 text-slate-900 py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-amber-400 transition">Guardar Verificación</button>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- ENTRADA -->
+                <div class="border rounded-[2rem] p-5 space-y-3">
+                    <p class="text-[10px] font-black uppercase text-emerald-700 text-center border-b pb-2"><i class="fas fa-sign-in-alt"></i> Registro de Entrada</p>
+                    <p class="text-[9px] font-black uppercase text-slate-400">Firma del Solicitante</p>
+                    <canvas id="asis_sign_entrada" class="w-full h-32 bg-slate-50 border rounded-xl touch-none"></canvas>
+                    <button onclick="clearSignaturePad('entrada')" class="w-full text-[9px] font-black uppercase text-slate-400 hover:text-red-500">Limpiar Firma</button>
+
+                    <p class="text-[9px] font-black uppercase text-slate-400 pt-2">Foto al Momento de Firmar</p>
+                    <video id="asis_video_entrada" class="w-full h-32 bg-slate-900 rounded-xl object-cover hidden" autoplay playsinline muted></video>
+                    <img id="asis_photo_entrada_preview" class="w-full h-32 bg-slate-100 rounded-xl object-cover hidden">
+                    <div class="flex gap-2">
+                        <button onclick="startCamera('entrada')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-200"><i class="fas fa-camera"></i> Iniciar Cámara</button>
+                        <button onclick="capturePhoto('entrada')" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-700"><i class="fas fa-camera-retro"></i> Tomar Foto</button>
+                    </div>
+                    <button onclick="saveAsistencia('entrada')" id="asis_btn_save_entrada" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-emerald-500 transition">Confirmar Entrada</button>
+                    <p id="asis_status_entrada" class="text-[9px] font-black uppercase text-center hidden text-emerald-600"></p>
+                </div>
+
+                <!-- SALIDA -->
+                <div class="border rounded-[2rem] p-5 space-y-3">
+                    <p class="text-[10px] font-black uppercase text-red-700 text-center border-b pb-2"><i class="fas fa-sign-out-alt"></i> Registro de Salida</p>
+                    <p class="text-[9px] font-black uppercase text-slate-400">Firma del Solicitante</p>
+                    <canvas id="asis_sign_salida" class="w-full h-32 bg-slate-50 border rounded-xl touch-none"></canvas>
+                    <button onclick="clearSignaturePad('salida')" class="w-full text-[9px] font-black uppercase text-slate-400 hover:text-red-500">Limpiar Firma</button>
+
+                    <p class="text-[9px] font-black uppercase text-slate-400 pt-2">Foto al Momento de Firmar</p>
+                    <video id="asis_video_salida" class="w-full h-32 bg-slate-900 rounded-xl object-cover hidden" autoplay playsinline muted></video>
+                    <img id="asis_photo_salida_preview" class="w-full h-32 bg-slate-100 rounded-xl object-cover hidden">
+                    <div class="flex gap-2">
+                        <button onclick="startCamera('salida')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-200"><i class="fas fa-camera"></i> Iniciar Cámara</button>
+                        <button onclick="capturePhoto('salida')" class="flex-1 bg-slate-800 text-white py-2.5 rounded-xl text-[9px] font-black uppercase hover:bg-slate-700"><i class="fas fa-camera-retro"></i> Tomar Foto</button>
+                    </div>
+                    <button onclick="saveAsistencia('salida')" id="asis_btn_save_salida" class="w-full bg-red-600 text-white py-3 rounded-xl font-black uppercase text-xs shadow hover:bg-red-500 transition">Confirmar Salida</button>
+                    <p id="asis_status_salida" class="text-[9px] font-black uppercase text-center hidden text-red-600"></p>
+                </div>
             </div>
         </div>
     </div>
@@ -269,6 +349,7 @@
                 <!-- DYNAMIC FIELDS -->
                 <div id="reg_fields_equipo" class="space-y-4">
                     <input type="text" id="reg_team_name" placeholder="Nombre del Equipo / Grupo" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
+                    <input type="text" id="reg_team_rep_name" placeholder="Nombre del Representante del Equipo" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
                     <input type="text" id="reg_team_ages" placeholder="Edades Promedio de Participantes (Ej: 12-15)" class="w-full p-4 border rounded-2xl font-bold bg-slate-50 outline-none focus:border-emerald-500">
                 </div>
 
@@ -333,13 +414,21 @@
                     </div>
                 </div>
 
-                <div id="res_edades_section" class="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 space-y-3 hidden">
+                <div id="res_edades_section" class="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 space-y-4 hidden">
                     <p class="text-[10px] font-black uppercase text-emerald-800 text-center border-b border-emerald-200 pb-2">Categoría del Grupo</p>
                     <select id="res_categoria_edad" class="w-full p-4 border rounded-2xl bg-white outline-none focus:border-emerald-500 transition font-black text-sm text-slate-700 shadow-sm cursor-pointer">
                         <option value="Infantil">Infantil (Menores de 13)</option>
                         <option value="Juvenil">Juvenil (13 a 17 años)</option>
                         <option value="Adultos" selected>Adultos (+18)</option>
                     </select>
+                    <div>
+                       <label class="text-emerald-700 text-[9px] uppercase font-black">Responsable de ese Día</label>
+                       <input type="text" id="res_responsable" placeholder="Ej. Juan Pérez" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-emerald-500 transition font-bold text-sm text-slate-700 shadow-sm">
+                    </div>
+                    <div>
+                       <label class="text-emerald-700 text-[9px] uppercase font-black">Cantidad de Personas que Ingresarán</label>
+                       <input type="number" id="res_cantidad_personas" min="1" placeholder="Ej. 15" class="w-full p-3 mt-1 border rounded-xl bg-white outline-none focus:border-emerald-500 transition font-bold text-sm text-slate-700 shadow-sm">
+                    </div>
                 </div>
 
                 <div id="res_evento_section" class="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 space-y-4 hidden">
@@ -354,12 +443,13 @@
                     </div>
                 </div>
 
-                <!-- SECCIÓN MATERIALES (SIN PRECIO, SOLO CANTIDAD PARA CONTROL DE INVENTARIO) -->
-                <div id="res_extras_section" class="bg-slate-50 p-6 rounded-[2rem] border space-y-3">
-                    <p class="text-[10px] font-black uppercase text-slate-400 text-center border-b pb-2">Materiales / Implementos Solicitados (Opcional)</p>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Juego de Conos</span><input type="number" id="rent_conos" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Set de Chalecos</span><input type="number" id="rent_chalecos" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Balones</span><input type="number" id="rent_balones" value="0" min="0" class="w-16 p-2 text-center border rounded-xl outline-none focus:border-emerald-500"></div>
+                <div class="bg-red-50 border border-red-200 rounded-[2rem] p-6 space-y-2">
+                    <p class="text-[10px] font-black uppercase text-red-700 text-center border-b border-red-200 pb-2 flex items-center justify-center gap-2"><i class="fas fa-exclamation-triangle"></i> Reglas de Orden y Aseo</p>
+                    <p id="res_modal_rules_text" class="text-[11px] font-bold text-red-700 leading-relaxed whitespace-pre-line"></p>
+                    <label class="flex items-center gap-2 pt-2 cursor-pointer">
+                        <input type="checkbox" id="res_accept_rules" class="w-4 h-4 accent-red-600">
+                        <span class="text-[10px] font-black uppercase text-red-700">Acepto y me comprometo a cumplir las reglas</span>
+                    </label>
                 </div>
 
                 <button id="btnSubmitRes" onclick="submitReserva()" class="w-full mt-4 bg-emerald-600 text-white py-5 rounded-2xl text-sm font-black uppercase shadow-lg hover:bg-emerald-500 transition">Confirmar Reserva</button>
@@ -449,12 +539,18 @@
 
         let globalWhatsapp = "";
         let globalInfo = "";
+        let globalRules = "";
+        const DEFAULT_RULES = "1. Se prohíben las peleas o cualquier tipo de agresión.\n2. Se prohíbe el uso de malas palabras y lenguaje irrespetuoso.\n3. Se prohíbe la discriminación de cualquier tipo.\n4. No se permiten acompañantes no registrados en la reserva.\n5. Se prohíbe rayar o dañar las instalaciones de la institución.\n6. Se prohíbe destruir o maltratar el equipo o la cancha.\n7. Debe mantenerse el orden y aseo del lugar durante y después del uso.";
 
         let currentResType = 'Cancha Futbol';
         let regFotoBase64 = null;
         let editFotoBase64 = null;
         let editingClientId = null;
         let editingResId = null;
+        let editingAsistenciaId = null;
+        let asisSignPads = {}; // { entrada: {canvas, ctx, drawing}, salida: {...} }
+        let asisCameraStreams = {}; // { entrada: MediaStream, salida: MediaStream }
+        let asisCapturedPhotos = {}; // { entrada: base64, salida: base64 }
         let activeChatTeamId = null;
         let chatAttachmentBase64 = null;
         let unsubscribers = [];
@@ -480,12 +576,27 @@
             publicUnsubscribers.push(onSnapshot(doc(db, "config", "general"), (d) => {
                 if(d.exists()) {
                     const data = d.data();
-                    if(data.whatsapp) globalWhatsapp = data.whatsapp;
+                    if(data.whatsapp) {
+                        globalWhatsapp = data.whatsapp;
+                        const waEl = document.getElementById('config_whatsapp');
+                        if(waEl && !waEl.dataset.touched) waEl.value = globalWhatsapp;
+                    }
                     if(data.info) {
                         globalInfo = data.info;
                         const infoEl = document.getElementById('publicInfoText');
                         if(infoEl) infoEl.innerText = globalInfo;
+                        const infoConfigEl = document.getElementById('config_info');
+                        if(infoConfigEl && !infoConfigEl.dataset.touched) infoConfigEl.value = globalInfo;
                     }
+                    globalRules = data.rules || DEFAULT_RULES;
+                    const rulesEl = document.getElementById('publicRulesText');
+                    if(rulesEl) rulesEl.innerText = globalRules;
+                    const rulesConfigEl = document.getElementById('config_rules');
+                    if(rulesConfigEl && !rulesConfigEl.dataset.touched) rulesConfigEl.value = globalRules;
+                } else {
+                    globalRules = DEFAULT_RULES;
+                    const rulesEl = document.getElementById('publicRulesText');
+                    if(rulesEl) rulesEl.innerText = globalRules;
                 }
             }));
             publicUnsubscribers.push(onSnapshot(collection(db, "reservations"), (s) => {
@@ -537,11 +648,8 @@
             }
 
             if(currentUser.role === 'admin' || currentUser.role === 'superadmin') {
-                ['tab_adminPanel', 'tab_equiposPanel'].forEach(id => document.getElementById(id).classList.remove('hidden'));
+                ['tab_adminPanel', 'tab_equiposPanel', 'tab_configPanel'].forEach(id => document.getElementById(id).classList.remove('hidden'));
                 document.getElementById('btnChatAdmin').classList.remove('hidden');
-                if(currentUser.role === 'superadmin') {
-                    document.getElementById('tab_configPanel').classList.remove('hidden');
-                }
                 switchTab('adminPanel');
             } else {
                 document.getElementById('btnNewRes').classList.remove('hidden');
@@ -585,9 +693,12 @@
 
             board.innerHTML = dates.map(d => {
                 const daySlots = grouped[d].map(r => `
-                    <div class="flex justify-between items-center bg-slate-800 p-2.5 rounded-lg border border-slate-700/50">
-                        <span class="text-emerald-400 font-bold text-xs">${r.hourIn} - ${r.hourOut}</span>
-                        <span class="bg-red-500/20 text-red-400 px-2.5 py-0.5 rounded text-[8px] font-black uppercase">Ocupado</span>
+                    <div class="flex flex-col gap-1 bg-slate-800 p-2.5 rounded-lg border border-slate-700/50">
+                        <div class="flex justify-between items-center">
+                            <span class="text-emerald-400 font-bold text-xs">${r.hourIn} - ${r.hourOut}</span>
+                            <span class="bg-red-500/20 text-red-400 px-2.5 py-0.5 rounded text-[8px] font-black uppercase">${r.status === 'Pendiente' ? 'Pendiente' : 'Ocupado'}</span>
+                        </div>
+                        <span class="text-slate-300 text-[10px] font-black uppercase truncate"><i class="fas fa-users mr-1"></i>${r.teamName || 'Equipo'}</span>
                     </div>
                 `).join('<div class="h-2"></div>');
 
@@ -609,7 +720,8 @@
         // GESTIÓN UNIFICADA DE PERFIL DE USUARIOS
         window.openProfile = () => {
             if(!currentUser) return;
-            document.getElementById('profile_name').value = currentUser.teamName || currentUser.representative || '';
+            document.getElementById('profile_team_name').value = currentUser.teamName || '';
+            document.getElementById('profile_name').value = currentUser.representative || '';
             document.getElementById('profile_cedula').value = currentUser.cedula || '';
             document.getElementById('profile_phone').value = currentUser.phone || '';
 
@@ -644,16 +756,17 @@
 
         window.saveProfile = async () => {
             if(!currentUser) return;
+            const teamName = document.getElementById('profile_team_name').value.trim();
             const name = document.getElementById('profile_name').value.trim();
             const cedula = document.getElementById('profile_cedula').value.trim();
             const phone = document.getElementById('profile_phone').value.trim();
             const imgPreview = document.getElementById('profile_photo_preview');
             const imgBase64 = imgPreview.classList.contains('hidden') ? null : imgPreview.src;
 
-            if(!name || !cedula || !phone) return alert("Todos los campos son obligatorios.");
+            if(!teamName || !name || !cedula || !phone) return alert("Todos los campos son obligatorios.");
 
             try {
-                const payload = { teamName: name, representative: name, cedula, phone };
+                const payload = { teamName: teamName, representative: name, cedula, phone };
                 if(imgBase64 && imgBase64.startsWith('data:image')) payload.fotoCedula = imgBase64;
                 await updateDoc(doc(db, "teams", currentUser.id), payload);
                 alert("Información personal guardada con éxito.");
@@ -661,29 +774,234 @@
             } catch(e) { alert("Error al guardar información: " + e.message); }
         };
 
+        // Reglas de edición para usuarios tipo equipo: sólo pueden editar fecha/hora
+        // una única vez, y únicamente si faltan más de 24 horas para la reserva.
+        window.canUserEditReservation = (r) => {
+            if(r.status === 'Rechazada') return { allowed: false, reason: 'Reserva Rechazada' };
+            if((r.editCount || 0) >= 1) return { allowed: false, reason: 'Ya editada (1 vez máx)' };
+            const resDateTime = new Date(`${r.date}T${r.hourIn || '00:00'}`);
+            if(isNaN(resDateTime.getTime())) return { allowed: false, reason: 'Fecha inválida' };
+            const deadline = new Date(resDateTime.getTime() - 24*60*60*1000);
+            if(new Date() > deadline) return { allowed: false, reason: 'Fuera de plazo (24h)' };
+            return { allowed: true, reason: '' };
+        };
+
         window.openEditReservation = (id) => {
             const r = reserves.find(x => x.id === id); if(!r) return;
+
+            const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
+            if(!isAdmin) {
+                const check = canUserEditReservation(r);
+                if(!check.allowed) return alert(`No puedes editar esta reserva: ${check.reason}`);
+            }
+
             editingResId = id;
             document.getElementById('edit_res_teamName').value = r.teamName || '';
             document.getElementById('edit_res_date').value = r.date || '';
             document.getElementById('edit_res_hourIn').value = r.hourIn || '';
             document.getElementById('edit_res_hourOut').value = r.hourOut || '';
+
+            const teamNameWrap = document.getElementById('edit_res_teamName_wrap');
+            const noteEl = document.getElementById('edit_res_user_note');
+            if(isAdmin) {
+                teamNameWrap.classList.remove('hidden');
+                noteEl.classList.add('hidden');
+            } else {
+                teamNameWrap.classList.add('hidden');
+                noteEl.classList.remove('hidden');
+            }
             showModal('modalEditReservation');
         };
 
         window.saveEditReservation = async () => {
             if(!editingResId) return;
-            const tName = document.getElementById('edit_res_teamName').value;
+            const isAdmin = currentUser.role === 'admin' || currentUser.role === 'superadmin';
             const rDate = document.getElementById('edit_res_date').value;
             const hIn = document.getElementById('edit_res_hourIn').value;
             const hOut = document.getElementById('edit_res_hourOut').value;
 
+            const payload = { date: rDate, hourIn: hIn, hourOut: hOut };
+
+            if(isAdmin) {
+                payload.teamName = document.getElementById('edit_res_teamName').value;
+            } else {
+                const r = reserves.find(x => x.id === editingResId);
+                const check = r ? canUserEditReservation(r) : { allowed: false };
+                if(!check.allowed) { alert("Ya no puedes editar esta reserva."); closeModal('modalEditReservation'); return; }
+                payload.editCount = (r.editCount || 0) + 1;
+            }
+
             try {
-                await updateDoc(doc(db, "reservations", editingResId), {
-                    teamName: tName, date: rDate, hourIn: hIn, hourOut: hOut
-                });
+                await updateDoc(doc(db, "reservations", editingResId), payload);
                 alert("Reserva editada correctamente.");
                 closeModal('modalEditReservation');
+            } catch(e) { alert(e.message); }
+        };
+
+        // ===================== CONTROL DE ASISTENCIA (ADMIN) =====================
+        // Checklist de cantidad de personas + firma digital + foto al firmar, para
+        // entrada y salida del día de la reserva.
+
+        function setupSignaturePad(canvas) {
+            const ctx = canvas.getContext('2d');
+            // Ajustar resolución interna al tamaño real mostrado
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = canvas.clientWidth * ratio;
+            canvas.height = canvas.clientHeight * ratio;
+            ctx.scale(ratio, ratio);
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#0f172a';
+
+            const state = { canvas, ctx, drawing: false };
+
+            const getPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            };
+            const start = (e) => { state.drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); };
+            const move = (e) => { if(!state.drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); e.preventDefault(); };
+            const end = () => { state.drawing = false; };
+
+            canvas.addEventListener('mousedown', start);
+            canvas.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', end);
+            canvas.addEventListener('touchstart', start, { passive: false });
+            canvas.addEventListener('touchmove', move, { passive: false });
+            canvas.addEventListener('touchend', end);
+
+            return state;
+        }
+
+        window.clearSignaturePad = (tipo) => {
+            const pad = asisSignPads[tipo];
+            if(!pad) return;
+            pad.ctx.clearRect(0, 0, pad.canvas.width, pad.canvas.height);
+        };
+
+        window.startCamera = async (tipo) => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                asisCameraStreams[tipo] = stream;
+                const video = document.getElementById(`asis_video_${tipo}`);
+                video.srcObject = stream;
+                video.classList.remove('hidden');
+                document.getElementById(`asis_photo_${tipo}_preview`).classList.add('hidden');
+            } catch(e) {
+                alert("No se pudo acceder a la cámara: " + e.message);
+            }
+        };
+
+        window.capturePhoto = (tipo) => {
+            const video = document.getElementById(`asis_video_${tipo}`);
+            const stream = asisCameraStreams[tipo];
+            if(!stream || !video.videoWidth) return alert("Primero inicia la cámara.");
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.85);
+            asisCapturedPhotos[tipo] = base64;
+
+            const preview = document.getElementById(`asis_photo_${tipo}_preview`);
+            preview.src = base64;
+            preview.classList.remove('hidden');
+            video.classList.add('hidden');
+
+            stream.getTracks().forEach(t => t.stop());
+            asisCameraStreams[tipo] = null;
+        };
+
+        function stopAllAsisCameras() {
+            Object.keys(asisCameraStreams).forEach(tipo => {
+                const s = asisCameraStreams[tipo];
+                if(s) s.getTracks().forEach(t => t.stop());
+                asisCameraStreams[tipo] = null;
+            });
+        }
+
+        window.openAsistencia = (id) => {
+            const r = reserves.find(x => x.id === id); if(!r) return;
+            editingAsistenciaId = id;
+            asisCapturedPhotos = {};
+
+            document.getElementById('asis_reserva_info').innerHTML =
+                `${r.date} | ${r.hourIn} - ${r.hourOut} · <b>${r.teamName}</b><br>Responsable: ${r.responsable || 'N/A'} · Personas Declaradas: <b>${r.personas || 0}</b>`;
+
+            const asistencia = r.asistencia || {};
+            document.getElementById('asis_personas_reales').value = asistencia.personasReales ?? '';
+            document.getElementById('asis_personas_ok').checked = !!asistencia.personasOk;
+
+            ['entrada', 'salida'].forEach(tipo => {
+                const statusEl = document.getElementById(`asis_status_${tipo}`);
+                const saveBtn = document.getElementById(`asis_btn_save_${tipo}`);
+                const preview = document.getElementById(`asis_photo_${tipo}_preview`);
+                preview.classList.add('hidden');
+                document.getElementById(`asis_video_${tipo}`).classList.add('hidden');
+                if(asistencia[tipo] && asistencia[tipo].hora) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.innerText = `✓ Registrada a las ${new Date(asistencia[tipo].hora).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+                    saveBtn.innerText = `Actualizar ${tipo === 'entrada' ? 'Entrada' : 'Salida'}`;
+                    if(asistencia[tipo].foto) { preview.src = asistencia[tipo].foto; preview.classList.remove('hidden'); }
+                } else {
+                    statusEl.classList.add('hidden');
+                    saveBtn.innerText = `Confirmar ${tipo === 'entrada' ? 'Entrada' : 'Salida'}`;
+                }
+            });
+
+            showModal('modalAsistencia');
+
+            // Inicializar los pads de firma después de que el modal sea visible (canvas necesita tamaño real)
+            setTimeout(() => {
+                ['entrada', 'salida'].forEach(tipo => {
+                    const canvas = document.getElementById(`asis_sign_${tipo}`);
+                    asisSignPads[tipo] = setupSignaturePad(canvas);
+                });
+            }, 50);
+        };
+
+        window.closeAsistencia = () => {
+            stopAllAsisCameras();
+            closeModal('modalAsistencia');
+        };
+
+        window.saveAsistenciaChecklist = async () => {
+            if(!editingAsistenciaId) return;
+            const r = reserves.find(x => x.id === editingAsistenciaId);
+            const personasReales = parseInt(document.getElementById('asis_personas_reales').value || 0);
+            const personasOk = document.getElementById('asis_personas_ok').checked;
+
+            if(r && personasReales > (r.personas || 0) && personasOk) {
+                return alert("La cantidad real es mayor a la declarada; no puedes marcar la casilla de verificación.");
+            }
+
+            try {
+                await updateDoc(doc(db, "reservations", editingAsistenciaId), {
+                    'asistencia.personasReales': personasReales,
+                    'asistencia.personasOk': personasOk
+                });
+                alert("Verificación de asistencia guardada.");
+            } catch(e) { alert(e.message); }
+        };
+
+        window.saveAsistencia = async (tipo) => {
+            if(!editingAsistenciaId) return;
+            const pad = asisSignPads[tipo];
+            if(!pad) return alert("La firma aún no está lista, intenta de nuevo.");
+
+            const firma = pad.canvas.toDataURL('image/png');
+            const foto = asisCapturedPhotos[tipo] || null;
+
+            if(!foto) { if(!confirm("No se ha tomado una foto para este registro. ¿Deseas continuar sin foto?")) return; }
+
+            try {
+                await updateDoc(doc(db, "reservations", editingAsistenciaId), {
+                    [`asistencia.${tipo}`]: { firma, foto, hora: new Date().toISOString() }
+                });
+                alert(`Registro de ${tipo === 'entrada' ? 'entrada' : 'salida'} guardado correctamente.`);
+                closeAsistencia();
             } catch(e) { alert(e.message); }
         };
 
@@ -844,6 +1162,39 @@
             docPdf.save(`Reservas_Cancha_${new Date().toISOString().slice(0,10)}.pdf`);
         };
 
+        // EXPORTACIÓN DEL HISTORIAL PERSONAL DE SOLICITUDES (FECHA, HORA, CANTIDAD DE PERSONAS)
+        window.exportMyHistoryPDF = () => {
+            if(!currentUser) return;
+            const myRes = reserves.filter(r => r.teamId === currentUser.id).sort((a,b)=> new Date(a.date) - new Date(b.date));
+            if(!myRes.length) return alert("Aún no tienes historial de solicitudes.");
+
+            const { jsPDF } = window.jspdf;
+            const docPdf = new jsPDF();
+
+            docPdf.setFillColor(15, 23, 42);
+            docPdf.rect(0, 0, 210, 30, 'F');
+            docPdf.setTextColor(255, 255, 255);
+            docPdf.setFont("helvetica", "bold");
+            docPdf.setFontSize(16);
+            docPdf.text(`HISTORIAL DE SOLICITUDES - ${(currentUser.teamName || currentUser.representative || '').toUpperCase()}`, 14, 19);
+
+            const rows = myRes.map(r => [
+                r.date || '', `${r.hourIn || ''} - ${r.hourOut || ''}`, r.type || '',
+                String(r.personas || 0), r.status || ''
+            ]);
+
+            docPdf.autoTable({
+                startY: 38,
+                head: [['Fecha', 'Horario', 'Tipo', 'Cantidad de Personas', 'Estado']],
+                body: rows,
+                theme: 'grid',
+                headStyles: { fillColor: [16, 185, 129] },
+                styles: { fontSize: 9 }
+            });
+
+            docPdf.save(`Mi_Historial_Reservas_${new Date().toISOString().slice(0,10)}.pdf`);
+        };
+
         // RENDERIZADOS Y COMPORTAMIENTOS DINÁMICOS
         window.render = () => {
             const aTbody = document.getElementById('adminTableBody');
@@ -854,10 +1205,11 @@
                     <tr>
                         <td class="p-4"><p class="font-bold">${r.date}</p><p class="text-[10px] text-slate-500 uppercase">${r.hourIn} - ${r.hourOut} | ${r.type}</p></td>
                         <td class="p-4 font-bold text-emerald-700">${r.teamName}${catText}</td>
-                        <td class="p-4 text-xs text-slate-500">${r.type==='Cancha Futbol' ? `Conos: ${r.implementos?.conos||0}, Chalecos: ${r.implementos?.chalecos||0}, Balones: ${r.implementos?.balones||0}` : 'No aplica'}</td>
+                        <td class="p-4 text-xs text-slate-500">Responsable: ${r.responsable || 'N/A'}<br>Personas: ${r.personas || 0}</td>
                         <td class="p-4 text-center">
                             <div class="flex flex-col gap-1 items-center">
-                                ${r.status === 'Pendiente' ? `<button onclick="updateResStatus('${r.id}', 'Aprobada')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-[10px] font-black uppercase">Aprobar</button>` : `<span class="px-3 py-1 rounded text-[10px] font-black uppercase ${r.status==='Aprobada'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${r.status}</span>`}
+                                ${r.status === 'Pendiente' ? `<div class="flex gap-1"><button onclick="updateResStatus('${r.id}', 'Aprobada')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-emerald-200">Aprobar</button><button onclick="updateResStatus('${r.id}', 'Rechazada')" class="bg-red-100 text-red-700 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-red-200">Rechazar</button></div>` : `<span class="px-3 py-1 rounded text-[10px] font-black uppercase ${r.status==='Aprobada'?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-700'}">${r.status}</span>`}
+                                ${r.status === 'Aprobada' ? `<button onclick="openAsistencia('${r.id}')" class="bg-amber-100 text-amber-700 px-3 py-1 rounded text-[10px] font-black uppercase block hover:bg-amber-200 mt-1"><i class="fas fa-clipboard-check"></i> Asistencia</button>` : ''}
                                 <button onclick="openEditReservation('${r.id}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded text-[10px] font-black uppercase block hover:bg-blue-200 mt-1"><i class="fas fa-edit"></i> Editar</button>
                                 ${currentUser.role === 'superadmin' ? `<button onclick="deleteReserva('${r.id}')" class="bg-slate-200 text-slate-600 px-3 py-1 rounded text-[10px] font-black uppercase hover:bg-slate-300 mt-1"><i class="fas fa-trash"></i> Borrar</button>` : ''}
                             </div>
@@ -869,14 +1221,18 @@
             const uList = document.getElementById('userResList');
             if(uList && currentUser.role === 'user') {
                 const myRes = reserves.filter(r => r.teamId === currentUser.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-                uList.innerHTML = myRes.length ? myRes.map(r => `
+                uList.innerHTML = myRes.length ? myRes.map(r => {
+                    const editInfo = canUserEditReservation(r);
+                    return `
                     <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-full h-2 ${r.status==='Aprobada'?'bg-emerald-400':r.status==='Rechazada'?'bg-red-400':'bg-amber-400'}"></div>
                         <h4 class="font-black italic uppercase text-lg text-slate-800 mt-2">${r.type}</h4>
-                        <p class="text-xs font-bold text-slate-500 mb-4"><i class="far fa-calendar-alt"></i> ${r.date} | ${r.hourIn} - ${r.hourOut}</p>
-                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl"><span class="text-[10px] font-black uppercase text-slate-400">Estado</span><span class="text-xs font-black uppercase ${r.status==='Aprobada'?'text-emerald-500':r.status==='Rechazada'?'text-red-500':'text-amber-500'}">${r.status}</span></div>
-                    </div>
-                `).join('') : '<p class="text-slate-400 font-bold text-sm">No tienes reservas aún.</p>';
+                        <p class="text-xs font-bold text-slate-500 mb-2"><i class="far fa-calendar-alt"></i> ${r.date} | ${r.hourIn} - ${r.hourOut}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase mb-4">Responsable: ${r.responsable || 'N/A'} · Personas: ${r.personas || 0}</p>
+                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl mb-2"><span class="text-[10px] font-black uppercase text-slate-400">Estado</span><span class="text-xs font-black uppercase ${r.status==='Aprobada'?'text-emerald-500':r.status==='Rechazada'?'text-red-500':'text-amber-500'}">${r.status}</span></div>
+                        <button ${editInfo.allowed ? `onclick="openEditReservation('${r.id}')"` : 'disabled'} class="w-full ${editInfo.allowed ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 cursor-not-allowed'} py-2.5 rounded-xl text-[10px] font-black uppercase transition"><i class="fas fa-edit"></i> ${editInfo.allowed ? 'Editar Fecha/Hora' : editInfo.reason}</button>
+                    </div>`;
+                }).join('') : '<p class="text-slate-400 font-bold text-sm">No tienes reservas aún.</p>';
             }
 
             const eTbody = document.getElementById('equiposTableBody');
@@ -993,9 +1349,10 @@
 
             if(type === 'equipo') {
                 teamName = document.getElementById('reg_team_name').value.trim();
+                repName = document.getElementById('reg_team_rep_name').value.trim();
                 edades = document.getElementById('reg_team_ages').value.trim();
-                repName = teamName;
                 if(!teamName) return alert("Nombre del equipo/grupo obligatorio.");
+                if(!repName) return alert("Nombre del representante del equipo obligatorio.");
             } else {
                 repName = document.getElementById('reg_event_name').value.trim();
                 objetivo = document.getElementById('reg_event_obj').value.trim();
@@ -1029,16 +1386,17 @@
             currentResType = type;
             document.getElementById('resTitleType').innerText = type;
             document.getElementById('res_fecha').value = ''; document.getElementById('res_hora_in').value = ''; document.getElementById('res_hora_out').value = '';
-            document.getElementById('rent_conos').value = 0; document.getElementById('rent_chalecos').value = 0; document.getElementById('rent_balones').value = 0;
+            document.getElementById('res_accept_rules').checked = false;
+            document.getElementById('res_modal_rules_text').innerText = globalRules || DEFAULT_RULES;
 
             if(type === 'Cancha Futbol') {
                 document.getElementById('res_edades_section').classList.remove('hidden');
                 document.getElementById('res_evento_section').classList.add('hidden');
-                document.getElementById('res_extras_section').classList.remove('hidden');
+                document.getElementById('res_responsable').value = '';
+                document.getElementById('res_cantidad_personas').value = '';
             } else {
                 document.getElementById('res_edades_section').classList.add('hidden');
                 document.getElementById('res_evento_section').classList.remove('hidden');
-                document.getElementById('res_extras_section').classList.add('hidden');
             }
             closeModal('modalResType'); showModal('modalRes');
         };
@@ -1058,22 +1416,25 @@
             ));
             if(conflict) return alert(`🚨 Conflicto: Ya existe una reserva ocupando de ${conflict.hourIn} a ${conflict.hourOut}.`);
 
+            if(!document.getElementById('res_accept_rules').checked) return alert("Debes aceptar las Reglas de Orden y Aseo para poder reservar.");
+
             const payload = {
                 teamId: currentUser.id, teamName: currentUser.teamName || currentUser.representative,
-                type: currentResType, date, hourIn: hIn, hourOut: hOut, status: 'Pendiente', createdAt: new Date().toISOString()
+                type: currentResType, date, hourIn: hIn, hourOut: hOut, status: 'Pendiente', createdAt: new Date().toISOString(),
+                editCount: 0
             };
 
             if(currentResType === 'Evento al Aire Libre') {
                 payload.eventoPersonas = document.getElementById('res_evento_personas').value;
                 payload.eventoEncargado = document.getElementById('res_evento_encargado').value;
                 if(!payload.eventoPersonas || !payload.eventoEncargado) return alert("Cantidad de personas y encargado requeridos.");
+                payload.responsable = payload.eventoEncargado;
+                payload.personas = parseInt(payload.eventoPersonas) || 0;
             } else {
                 payload.categoriaEdad = document.getElementById('res_categoria_edad').value;
-                payload.implementos = {
-                    conos: parseInt(document.getElementById('rent_conos').value || 0),
-                    chalecos: parseInt(document.getElementById('rent_chalecos').value || 0),
-                    balones: parseInt(document.getElementById('rent_balones').value || 0)
-                };
+                payload.responsable = document.getElementById('res_responsable').value.trim();
+                payload.personas = parseInt(document.getElementById('res_cantidad_personas').value || 0);
+                if(!payload.responsable || !payload.personas) return alert("Responsable del día y cantidad de personas son requeridos.");
             }
 
             document.getElementById('btnSubmitRes').innerText = "Procesando..."; document.getElementById('btnSubmitRes').disabled = true;
@@ -1087,8 +1448,9 @@
         window.saveConfig = async () => {
             const whatsapp = document.getElementById('config_whatsapp').value.trim();
             const info = document.getElementById('config_info').value.trim();
+            const rules = document.getElementById('config_rules').value.trim();
             try {
-                await setDoc(doc(db, "config", "general"), { whatsapp, info }, { merge: true });
+                await setDoc(doc(db, "config", "general"), { whatsapp, info, rules }, { merge: true });
                 alert("Configuración Guardada.");
             } catch(e) { alert(e.message); }
         };
