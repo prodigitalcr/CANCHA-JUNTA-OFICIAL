@@ -371,6 +371,29 @@
         </div>
     </div>
 
+    <!-- MODAL EDITAR CLIENTE (DIRECTORIO) -->
+    <div id="modalEditClient" class="fixed inset-0 modal-backdrop hidden z-[250] flex items-center justify-center p-4">
+        <div class="glass-strong rounded-[3rem] max-w-md w-full p-10 shadow-2xl max-h-[90vh] overflow-y-auto chat-scroll relative">
+            <button onclick="closeModal('modalEditClient')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <h3 class="text-2xl font-black mb-6 uppercase italic text-amber-600"><i class="fas fa-user-edit"></i> Editar Usuario</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500">Nombre</label>
+                    <input type="text" id="edit_client_name" class="input-glass w-full p-4 rounded-2xl font-bold outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500">Cédula</label>
+                    <input type="text" id="edit_client_cedula" class="input-glass w-full p-4 rounded-2xl font-bold outline-none">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-slate-500">Teléfono / WhatsApp</label>
+                    <input type="text" id="edit_client_phone" class="input-glass w-full p-4 rounded-2xl font-bold outline-none">
+                </div>
+                <button onclick="saveEditClient()" class="w-full bg-amber-500 text-slate-900 py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-amber-400 transition">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modalUserNotif" class="fixed inset-0 modal-backdrop hidden z-[160] flex items-center justify-center p-4">
         <div class="glass-strong rounded-[3rem] max-w-lg w-full p-8 shadow-2xl max-h-[92vh] overflow-y-auto chat-scroll relative">
             <button onclick="closeModal('modalUserNotif')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
@@ -592,6 +615,7 @@
             document.getElementById(`tab_${tabId}`)?.classList.add('bg-emerald-50', 'text-emerald-700');
             if(tabId === 'calendarioPanel') renderCalendars();
             if(tabId === 'dashboardPanel') renderDashboard();
+            if(tabId === 'adminPanel' || tabId === 'equiposPanel' || tabId === 'userPanel') render();
         };
 
         async function sendCallMeBotNotification(reserva) {
@@ -1140,6 +1164,40 @@
                     </div>
                 `}).join('') : '<p class="text-slate-400 text-sm text-center">No tienes reservas.</p>';
             }
+
+            // DIRECTORIO DE USUARIOS
+            const eTbody = document.getElementById('equiposTableBody');
+            if(eTbody && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
+                // Muestra todos excepto los administradores
+                const usersOnly = teams.filter(t => t.role !== 'admin' && t.role !== 'superadmin');
+                eTbody.innerHTML = usersOnly.length ? usersOnly.map(t => `
+                    <tr>
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                ${t.logo ? `<img src="${t.logo}" class="w-10 h-10 rounded-lg object-contain border border-white/80 bg-white p-0.5 cursor-pointer" onclick="viewImage('${t.logo}')">` : ''}
+                                <div>
+                                    <p class="font-black text-slate-700">${t.teamName || t.representative || 'Sin Nombre'}</p>
+                                    <p class="text-[10px] text-emerald-600 uppercase font-bold">${t.tipoRegistro || 'equipo'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            <p class="font-bold text-xs text-slate-600">${t.cedula || 'N/A'}</p>
+                            ${t.fotoCedula ? `<button onclick="viewImage('${t.fotoCedula}')" class="text-[9px] bg-white/70 px-2 py-1 rounded text-slate-600 mt-1"><i class="fas fa-image"></i> Ver Foto</button>` : ''}
+                        </td>
+                        <td class="p-4 font-bold text-xs text-slate-600">
+                            ${t.phone || 'N/A'}
+                            ${t.cbmPhone ? `<br><span class="text-[9px] text-emerald-500 uppercase font-black"><i class="fab fa-whatsapp"></i> Notif. activas</span>` : ''}
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex gap-2 justify-center flex-wrap">
+                                <button onclick="openPrivateChat('${t.id}', '${t.teamName || t.representative}')" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 hover:bg-blue-200"><i class="fas fa-comments"></i> Chat</button>
+                                ${currentUser.role === 'superadmin' ? `<button onclick="openEditClient('${t.id}')" class="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-amber-200"><i class="fas fa-edit"></i> Editar</button> <button onclick="deleteClient('${t.id}')" class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-[10px] font-black uppercase hover:bg-red-200"><i class="fas fa-trash"></i> Borrar</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold">No hay usuarios registrados aún.</td></tr>';
+            }
         };
 
         window.openQR = (id) => {
@@ -1169,6 +1227,32 @@
             try { await deleteDoc(doc(db, "reservations", id)); } catch(e) { showToast(e.message, "error"); }
         };
 
+        window.openEditClient = (id) => {
+            const t = teams.find(x => x.id === id); if(!t) return;
+            editingClientId = id;
+            document.getElementById('edit_client_name').value = t.teamName || t.representative || '';
+            document.getElementById('edit_client_cedula').value = t.cedula || '';
+            document.getElementById('edit_client_phone').value = t.phone || '';
+            showModal('modalEditClient');
+        };
+
+        window.saveEditClient = async () => {
+            try {
+                await updateDoc(doc(db, "teams", editingClientId), {
+                    teamName: document.getElementById('edit_client_name').value.trim(),
+                    representative: document.getElementById('edit_client_name').value.trim(),
+                    cedula: document.getElementById('edit_client_cedula').value.trim(),
+                    phone: document.getElementById('edit_client_phone').value.trim()
+                });
+                showToast("Usuario actualizado.", "success"); closeModal('modalEditClient');
+            } catch(e) { showToast(e.message, "error"); }
+        };
+
+        window.deleteClient = async (id) => {
+            if(!confirm("⚠️ ¿Borrar usuario permanentemente?")) return;
+            try { await deleteDoc(doc(db, "teams", id)); showToast("Usuario eliminado.", "success"); } catch(e) { showToast(e.message, "error"); }
+        };
+
         window.saveConfig = async () => {
             const blockedDates = document.getElementById('config_blockedDates').value.split('\n').map(s => s.trim()).filter(Boolean);
             const payload = {
@@ -1182,6 +1266,12 @@
         window.openUserChat = () => {
             activeChatTeamId = currentUser.role === 'user' ? currentUser.id : 'admin_superadmin';
             document.getElementById('chatHeaderName').innerText = activeChatTeamId === 'admin_superadmin' ? 'Soporte General' : `Chat con ${currentUser.teamName}`;
+            showModal('modalChat'); renderChat();
+        };
+
+        window.openPrivateChat = (teamId, teamName) => {
+            activeChatTeamId = teamId;
+            document.getElementById('chatHeaderName').innerText = teamName;
             showModal('modalChat'); renderChat();
         };
 
