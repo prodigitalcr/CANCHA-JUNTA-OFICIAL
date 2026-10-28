@@ -436,6 +436,50 @@
         </div>
     </div>
 
+    <!-- MODAL DETALLES DE RESERVA (NUEVO) -->
+    <div id="modalResDetails" class="fixed inset-0 modal-backdrop hidden z-[250] flex items-center justify-center p-4">
+        <div class="glass-strong rounded-[3rem] max-w-md w-full p-8 shadow-2xl relative">
+            <button onclick="closeModal('modalResDetails')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
+            <div class="flex items-center gap-3 mb-6 border-b border-white/60 pb-4">
+                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center"><i class="fas fa-file-alt text-xl"></i></div>
+                <div>
+                    <h3 class="text-xl font-black uppercase italic text-slate-800">Detalles de Reserva</h3>
+                    <p id="det_res_status_badge" class="text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block"></p>
+                </div>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="flex justify-between border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Tipo</span>
+                    <span id="det_res_type" class="font-bold text-slate-800"></span>
+                </div>
+                <div class="flex justify-between border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Fecha y Hora</span>
+                    <span id="det_res_datetime" class="font-bold text-slate-800"></span>
+                </div>
+                <div class="flex justify-between border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Responsable</span>
+                    <span id="det_res_responsable" class="font-bold text-slate-800"></span>
+                </div>
+                <div class="flex justify-between border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Personas</span>
+                    <span id="det_res_personas" class="font-bold text-slate-800"></span>
+                </div>
+                <div class="flex justify-between border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-slate-500">Categoría</span>
+                    <span id="det_res_categoria" class="font-bold text-slate-800"></span>
+                </div>
+                <div id="det_res_reject_wrap" class="hidden flex flex-col gap-1 border-b border-white/40 pb-2">
+                    <span class="text-[10px] font-black uppercase text-red-500">Motivo de Rechazo</span>
+                    <span id="det_res_reject" class="font-bold text-red-600 bg-red-50 p-2 rounded-lg text-xs leading-relaxed"></span>
+                </div>
+                <div id="det_res_asis_wrap" class="hidden flex flex-col gap-1 pb-2">
+                    <span class="text-[10px] font-black uppercase text-emerald-500">Asistencia</span>
+                    <span id="det_res_asis" class="font-bold text-emerald-600 bg-emerald-50 p-2 rounded-lg text-xs"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="modalAsistencia" class="fixed inset-0 modal-backdrop hidden z-[250] flex items-center justify-center p-4">
         <div class="glass-strong rounded-[3rem] max-w-md w-full p-8 shadow-2xl relative">
             <button onclick="closeAsistencia()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-xl"><i class="fas fa-times"></i></button>
@@ -491,35 +535,107 @@
         </div>
     </div>
 
+    <!-- MODAL RESERVA (CORREGIDO Y MEJORADO) -->
     <div id="modalRes" class="fixed inset-0 modal-backdrop hidden z-[115] flex items-center justify-center p-4">
-        <div class="glass-strong rounded-[3rem] max-w-3xl w-full p-8 shadow-2xl max-h-[95vh] overflow-y-auto relative">
-            <button onclick="closeModal('modalRes')" class="absolute top-6 right-6 text-slate-400 hover:text-slate-800 text-2xl"><i class="fas fa-times"></i></button>
-            <h3 class="text-2xl font-black uppercase italic mb-4 text-slate-800">Reserva: <span id="resTitleType" class="text-emerald-600"></span></h3>
-            <div class="space-y-4">
-                <div class="grid md:grid-cols-3 gap-4">
-                    <input type="date" id="res_fecha" class="input-glass p-4 rounded-2xl font-bold outline-none">
-                    <input type="time" id="res_hora_in" class="input-glass p-4 rounded-2xl font-bold outline-none">
-                    <input type="time" id="res_hora_out" class="input-glass p-4 rounded-2xl font-bold outline-none">
+        <div class="glass-strong rounded-[3rem] max-w-3xl w-full p-8 shadow-2xl max-h-[95vh] overflow-y-auto relative chat-scroll">
+            <button onclick="closeModal('modalRes')" class="absolute top-6 right-6 text-slate-400 hover:text-red-500 bg-white/50 rounded-full w-10 h-10 flex items-center justify-center transition z-10 text-xl shadow-sm"><i class="fas fa-times"></i></button>
+            
+            <h3 class="text-2xl font-black uppercase italic mb-6 text-slate-800">Reserva: <span id="resTitleType" class="text-emerald-600"></span></h3>
+            
+            <div class="space-y-6">
+                
+                <!-- Fecha y Horas -->
+                <div>
+                    <h4 class="text-sm font-black uppercase text-slate-500 mb-2 border-b border-white/60 pb-1"><i class="far fa-calendar-alt text-emerald-500"></i> Fecha y Horario</h4>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Fecha</label>
+                            <input type="date" id="res_fecha" class="input-glass w-full p-4 rounded-2xl font-bold outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Hora Entrada</label>
+                            <input type="time" id="res_hora_in" class="input-glass w-full p-4 rounded-2xl font-bold outline-none focus:border-emerald-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-slate-500 ml-1">Hora Salida</label>
+                            <input type="time" id="res_hora_out" class="input-glass w-full p-4 rounded-2xl font-bold outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
                 </div>
-                <div id="res_edades_section" class="bg-emerald-50 p-4 rounded-2xl space-y-2 hidden">
-                    <select id="res_categoria_edad" class="input-glass w-full p-3 rounded-xl font-black">
-                        <option value="Infantil">Infantil</option>
-                        <option value="Juvenil">Juvenil</option>
-                        <option value="Adultos" selected>Adultos</option>
-                    </select>
-                    <input type="text" id="res_responsable" placeholder="Responsable" class="input-glass w-full p-3 rounded-xl font-bold">
-                    <input type="number" id="res_cantidad_personas" placeholder="Cantidad personas" class="input-glass w-full p-3 rounded-xl font-bold">
+
+                <!-- Detalles Cancha -->
+                <div id="res_edades_section" class="bg-emerald-50/50 p-5 rounded-2xl border border-emerald-100 space-y-4 hidden">
+                    <h4 class="text-sm font-black uppercase text-emerald-800 mb-2"><i class="fas fa-users"></i> Detalles del Grupo</h4>
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-emerald-700 ml-1">Categoría</label>
+                            <select id="res_categoria_edad" class="input-glass w-full p-4 rounded-xl font-black outline-none">
+                                <option value="Infantil">Infantil</option>
+                                <option value="Juvenil">Juvenil</option>
+                                <option value="Adultos" selected>Adultos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-emerald-700 ml-1">Responsable</label>
+                            <input type="text" id="res_responsable" placeholder="Ej. Juan Pérez" class="input-glass w-full p-4 rounded-xl font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-emerald-700 ml-1">Cant. Personas</label>
+                            <input type="number" id="res_cantidad_personas" placeholder="Ej. 15" class="input-glass w-full p-4 rounded-xl font-bold outline-none">
+                        </div>
+                    </div>
                 </div>
-                <div id="res_evento_section" class="bg-blue-50 p-4 rounded-2xl space-y-2 hidden">
-                    <input type="number" id="res_evento_personas" placeholder="Cantidad personas" class="input-glass w-full p-3 rounded-xl font-bold">
-                    <input type="text" id="res_evento_encargado" placeholder="Encargado" class="input-glass w-full p-3 rounded-xl font-bold">
+
+                <!-- Detalles Evento -->
+                <div id="res_evento_section" class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 space-y-4 hidden">
+                    <h4 class="text-sm font-black uppercase text-blue-800 mb-2"><i class="fas fa-tree"></i> Detalles del Evento</h4>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-blue-700 ml-1">Encargado</label>
+                            <input type="text" id="res_evento_encargado" placeholder="Ej. Juan Pérez" class="input-glass w-full p-4 rounded-xl font-bold outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black uppercase text-blue-700 ml-1">Cant. Aproximada Personas</label>
+                            <input type="number" id="res_evento_personas" placeholder="Ej. 25" class="input-glass w-full p-4 rounded-xl font-bold outline-none">
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-amber-50 p-4 rounded-2xl">
-                    <input type="file" id="res_cedula_input" class="text-xs font-bold" accept="image/*" onchange="handleResCedula(this)">
-                    <img id="res_cedula_preview" class="w-full h-32 object-contain hidden mt-2" onclick="viewImage(this.src)">
+
+                <!-- Subir Cédula -->
+                <div class="bg-amber-50 p-5 rounded-2xl border-2 border-amber-200">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fas fa-id-card text-amber-600 text-lg"></i>
+                        <h4 class="text-sm font-black uppercase text-amber-800">Foto de Cédula del Responsable <span class="text-red-500">*Obligatoria</span></h4>
+                    </div>
+                    <p class="text-[10px] font-bold text-amber-700 mb-3">Debe adjuntar la cédula de quien hará uso de la cancha. Será verificada por el encargado.</p>
+                    
+                    <!-- Botón estilizado para subir archivo -->
+                    <label class="block bg-white/80 p-4 text-center rounded-xl cursor-pointer text-xs font-black uppercase text-amber-700 hover:bg-white transition border-2 border-dashed border-amber-400">
+                        <span id="lbl_res_cedula"><i class="fas fa-camera"></i> Seleccionar Imagen</span>
+                        <input type="file" id="res_cedula_input" class="hidden" accept="image/*" onchange="handleResCedula(this)">
+                    </label>
+                    
+                    <!-- Previsualización de la imagen -->
+                    <img id="res_cedula_preview" class="w-full h-40 bg-white/50 rounded-xl object-contain hidden mt-3 border-2 border-amber-300 cursor-pointer shadow-sm hover:opacity-80 transition" onclick="viewImage(this.src)" title="Clic para ampliar">
                 </div>
-                <label class="flex items-center gap-2"><input type="checkbox" id="res_accept_rules" class="w-5 h-5 accent-red-600"><span class="text-[10px] font-black uppercase text-red-700">Acepto reglas</span></label>
-                <button onclick="submitReserva()" class="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase shadow-lg">Confirmar</button>
+
+                <!-- Reglas -->
+                <div class="bg-red-50 p-5 rounded-2xl border border-red-200">
+                    <h4 class="text-sm font-black uppercase text-red-700 mb-2 flex items-center gap-2 border-b border-red-200 pb-2">
+                        <i class="fas fa-exclamation-triangle"></i> Reglas de Orden y Aseo
+                    </h4>
+                    <p id="res_modal_rules_text" class="text-[11px] font-bold text-red-700 leading-relaxed whitespace-pre-line mb-3 h-24 overflow-y-auto chat-scroll pr-2"></p>
+                    
+                    <label class="flex items-center gap-3 cursor-pointer p-3 bg-white/60 rounded-xl border border-red-200 hover:bg-white transition">
+                        <input type="checkbox" id="res_accept_rules" class="w-5 h-5 accent-red-600 cursor-pointer">
+                        <span class="text-[11px] font-black uppercase text-red-800 select-none">Acepto y me comprometo a cumplir las reglas</span>
+                    </label>
+                </div>
+
+                <!-- Botón Confirmar -->
+                <button id="btnSubmitRes" onclick="submitReserva()" class="w-full btn-shine bg-gradient-to-br from-emerald-500 to-emerald-600 text-white py-5 rounded-2xl text-sm font-black uppercase shadow-xl shadow-emerald-500/30 hover:scale-[1.01] transition-all">
+                    <i class="fas fa-check-circle mr-2"></i> Confirmar Reserva
+                </button>
             </div>
         </div>
     </div>
@@ -943,7 +1059,10 @@
                     canvas.width = img.width * scale; canvas.height = img.height * scale;
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                     resCedulaBase64 = canvas.toDataURL('image/jpeg', 0.8);
-                    const prev = document.getElementById('res_cedula_preview'); prev.src = resCedulaBase64; prev.classList.remove('hidden');
+                    const prev = document.getElementById('res_cedula_preview'); 
+                    prev.src = resCedulaBase64; 
+                    prev.classList.remove('hidden');
+                    document.getElementById('lbl_res_cedula').innerHTML = "<i class='fas fa-check text-emerald-500'></i> Imagen Lista";
                 }
             }; reader.readAsDataURL(file);
         };
@@ -953,7 +1072,12 @@
             document.getElementById('resTitleType').innerText = type;
             document.getElementById('res_fecha').value = ''; document.getElementById('res_hora_in').value = ''; document.getElementById('res_hora_out').value = '';
             document.getElementById('res_accept_rules').checked = false;
-            document.getElementById('res_cedula_preview').classList.add('hidden'); document.getElementById('res_cedula_input').value = ''; resCedulaBase64 = null;
+            document.getElementById('res_cedula_preview').classList.add('hidden'); 
+            document.getElementById('res_cedula_input').value = ''; 
+            document.getElementById('lbl_res_cedula').innerHTML = "<i class='fas fa-camera'></i> Seleccionar Imagen";
+            document.getElementById('res_modal_rules_text').innerText = globalRules || DEFAULT_RULES;
+            resCedulaBase64 = null;
+            
             if(type === 'Cancha Futbol') { document.getElementById('res_edades_section').classList.remove('hidden'); document.getElementById('res_evento_section').classList.add('hidden'); }
             else { document.getElementById('res_edades_section').classList.add('hidden'); document.getElementById('res_evento_section').classList.remove('hidden'); }
             closeModal('modalResType'); showModal('modalRes');
@@ -1150,16 +1274,19 @@
                 uList.innerHTML = myRes.length ? myRes.map(r => {
                     const canEdit = canUserEditReservation(r);
                     return `
-                    <div class="glass rounded-2xl border p-4 mb-2 flex justify-between items-center">
+                    <div class="glass rounded-2xl border p-4 mb-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div>
-                            <p class="text-xs font-black ${r.status === 'Aprobada' ? 'text-emerald-600' : r.status === 'Rechazada' ? 'text-red-600' : 'text-amber-600'}">${r.status}</p>
+                            <p class="text-xs font-black ${r.status === 'Aprobada' ? 'text-emerald-600' : r.status === 'Rechazada' ? 'text-red-600' : r.status === 'Cancelada' ? 'text-slate-500' : 'text-amber-600'}">${r.status}</p>
                             <p class="font-bold text-slate-800">${r.date} | ${r.hourIn}-${r.hourOut}</p>
                             <p class="text-[10px] text-slate-500">${r.type}</p>
                         </div>
-                        <div class="flex flex-col gap-1">
+                        <div class="flex flex-wrap sm:flex-col gap-1 w-full sm:w-auto justify-end">
+                            <button onclick="openReservationDetails('${r.id}')" class="text-[9px] bg-slate-100 text-slate-700 px-2 py-1 rounded font-black hover:bg-slate-200 transition mb-1"><i class="fas fa-info-circle"></i> Ver Info</button>
                             ${r.status === 'Aprobada' ? `<button onclick="openQR('${r.id}')" class="text-[9px] bg-blue-100 text-blue-700 px-2 py-1 rounded font-black">Ver QR</button>` : ''}
                             ${r.status === 'Pendiente' ? `<button onclick="cancelReservation('${r.id}')" class="text-[9px] bg-red-100 text-red-700 px-2 py-1 rounded font-black">Cancelar</button>` : ''}
-                            ${canEdit.allowed ? `<button onclick="openEditReservation('${r.id}')" class="text-[9px] bg-blue-100 text-blue-700 px-2 py-1 rounded font-black">Editar</button>` : ''}
+                            <button ${canEdit.allowed ? `onclick="openEditReservation('${r.id}')"` : `disabled title="${canEdit.reason}"`} class="text-[9px] ${canEdit.allowed ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-200 text-slate-400 cursor-not-allowed'} px-2 py-1 rounded font-black transition mt-1">
+                                <i class="fas fa-edit"></i> ${canEdit.allowed ? 'Editar' : 'No editable'}
+                            </button>
                         </div>
                     </div>
                 `}).join('') : '<p class="text-slate-400 text-sm text-center">No tienes reservas.</p>';
@@ -1168,7 +1295,6 @@
             // DIRECTORIO DE USUARIOS
             const eTbody = document.getElementById('equiposTableBody');
             if(eTbody && (currentUser.role === 'admin' || currentUser.role === 'superadmin')) {
-                // Muestra todos excepto los administradores
                 const usersOnly = teams.filter(t => t.role !== 'admin' && t.role !== 'superadmin');
                 eTbody.innerHTML = usersOnly.length ? usersOnly.map(t => `
                     <tr>
@@ -1198,6 +1324,44 @@
                     </tr>
                 `).join('') : '<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold">No hay usuarios registrados aún.</td></tr>';
             }
+        };
+
+        // NUEVA FUNCIÓN PARA VER LOS DETALLES DE UNA RESERVA
+        window.openReservationDetails = (id) => {
+            const r = reserves.find(x => x.id === id);
+            if (!r) return;
+
+            document.getElementById('det_res_type').innerText = r.type;
+            document.getElementById('det_res_datetime').innerText = `${r.date} | ${r.hourIn} - ${r.hourOut}`;
+            document.getElementById('det_res_responsable').innerText = r.responsable || 'N/A';
+            document.getElementById('det_res_personas').innerText = r.personas || 0;
+            document.getElementById('det_res_categoria').innerText = r.categoriaEdad || (r.type === 'Evento al Aire Libre' ? 'Evento' : 'General');
+
+            const badge = document.getElementById('det_res_status_badge');
+            badge.innerText = r.status;
+            if (r.status === 'Pendiente') badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block bg-amber-100 text-amber-700 border border-amber-200';
+            else if (r.status === 'Aprobada') badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block bg-emerald-100 text-emerald-700 border border-emerald-200';
+            else if (r.status === 'Rechazada') badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block bg-red-100 text-red-700 border border-red-200';
+            else badge.className = 'text-[10px] font-black uppercase px-2 py-0.5 rounded mt-1 inline-block bg-slate-200 text-slate-700 border border-slate-300';
+
+            const rejectWrap = document.getElementById('det_res_reject_wrap');
+            if (r.status === 'Rechazada' && r.rejectionReason) {
+                rejectWrap.classList.remove('hidden');
+                document.getElementById('det_res_reject').innerText = r.rejectionReason;
+            } else {
+                rejectWrap.classList.add('hidden');
+            }
+
+            const asisWrap = document.getElementById('det_res_asis_wrap');
+            if (r.asistencia && r.asistencia.confirmada) {
+                asisWrap.classList.remove('hidden');
+                const time = r.asistencia.hora ? new Date(r.asistencia.hora).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+                document.getElementById('det_res_asis').innerHTML = `<i class="fas fa-check-circle"></i> Confirmada ${time ? 'a las ' + time : ''}`;
+            } else {
+                asisWrap.classList.add('hidden');
+            }
+
+            showModal('modalResDetails');
         };
 
         window.openQR = (id) => {
